@@ -82,6 +82,16 @@ td.il{padding-left:40px}
 .tp{display:none}.tp.active{display:block}
 .plsb{background:none;border:none;color:var(--sub);font-size:13px;font-weight:500;padding:10px 22px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .plsb.on{color:var(--tx);font-weight:600;border-bottom-color:var(--ac)}
+.mmb{background:var(--sf2);border:1px solid var(--bd);color:var(--sub);font-size:12px;font-weight:500;padding:7px 16px;border-radius:20px;cursor:pointer;transition:all .15s}
+.mmb.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.mmb:hover:not(.on){border-color:var(--ac);color:var(--tx)}
+.mwc{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.mwh{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border-bottom:1px solid var(--bd)}
+.mta{width:100%;background:var(--sf);color:var(--tx);border:none;padding:14px 18px;font-size:13px;line-height:1.7;min-height:72px;resize:vertical;outline:none;font-family:inherit}
+.mta::placeholder{color:var(--sub);opacity:.5}
+.mta:focus{background:rgba(99,102,241,.04)}
+.msv{font-size:11px;color:var(--gr);opacity:0;transition:opacity .4s}
+.msv.show{opacity:1}
 @media(max-width:1200px){.kg{grid-template-columns:repeat(2,1fr)}.cg2{grid-template-columns:1fr}.cg3{grid-template-columns:1fr 1fr}}
 @media(max-width:768px){.main{padding:16px}.kg{grid-template-columns:1fr 1fr}.ig{grid-template-columns:1fr}}
 </style>
@@ -151,6 +161,14 @@ td.il{padding-left:40px}
   <div id="tab-issues" class="tp">
     <div style="font-size:13px;font-weight:600;color:var(--sub);margin-bottom:16px">📌 주요 이슈</div>
     <div class="ig" id="issueGrid"></div>
+    <div style="margin-top:32px;border-top:1px solid var(--bd);padding-top:28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <span style="font-size:14px;font-weight:600">📝 주차별 메모</span>
+        <span style="font-size:11px;color:var(--sub)">브라우저에 자동 저장됩니다</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px" id="memoMonthBtns"></div>
+      <div id="memoContent"></div>
+    </div>
   </div>
   <div id="tab-pl" class="tp">
     <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--bd)">
@@ -311,6 +329,50 @@ function buildMonthlyTable(){
 
 function buildIssues(){
   document.getElementById('issueGrid').innerHTML=ISSUES.map(d=>`<div class="ic"><div class="id ${d.level}"></div><div><span class="itag">${d.tag||''}</span><div class="ititle">${d.title||''}</div><div class="idesc">${(d.desc||'').replace(/\n/g,'<br>')}</div></div></div>`).join('');
+  initMemo();
+}
+
+// ══ 주차별 메모 ════════════════════════════════════════════
+const MEMO_MONTHS=['4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const MEMO_WEEKS=['1주차','2주차','3주차','4주차','5주차'];
+
+function initMemo(){
+  const btns=document.getElementById('memoMonthBtns');
+  if(!btns)return;
+  btns.innerHTML=MEMO_MONTHS.map((m,i)=>`<button class="mmb${i===0?' on':''}" id="mmb_${m}" onclick="selectMemoMonth('${m}')">${m}</button>`).join('');
+  selectMemoMonth(MEMO_MONTHS[0]);
+}
+
+function selectMemoMonth(month){
+  MEMO_MONTHS.forEach(function(m){
+    var b=document.getElementById('mmb_'+m);
+    if(b)b.className='mmb'+(m===month?' on':'');
+  });
+  var content=document.getElementById('memoContent');
+  if(!content)return;
+  content.innerHTML=MEMO_WEEKS.map(function(w){
+    var key='pb_memo_'+month+'_'+w;
+    var saved='';try{saved=localStorage.getItem(key)||'';}catch(e){}
+    var safeVal=saved.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="mwc">'
+      +'<div class="mwh">'
+      +'<span style="font-size:13px;font-weight:600;color:var(--tx)">'+month+' '+w+'</span>'
+      +'<span class="msv" id="sv_'+month+'_'+w+'">&#10003; 저장됨</span>'
+      +'</div>'
+      +'<textarea class="mta" id="memo_'+month+'_'+w+'" data-month="'+month+'" data-week="'+w+'" oninput="saveMemo(this.dataset.month,this.dataset.week)">'
+      +safeVal
+      +'</textarea>'
+      +'</div>';
+  }).join('');
+}
+
+function saveMemo(month,week){
+  var key='pb_memo_'+month+'_'+week;
+  var el=document.getElementById('memo_'+month+'_'+week);
+  if(!el)return;
+  try{localStorage.setItem(key,el.value);}catch(e){}
+  var sv=document.getElementById('sv_'+month+'_'+week);
+  if(sv){sv.classList.add('show');setTimeout(function(){sv.classList.remove('show');},2000);}
 }
 
 // ══ 월간손익 - 전체 요약 ════════════════════════════════════════════
