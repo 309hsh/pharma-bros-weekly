@@ -483,6 +483,61 @@ function buildPlTab() {
   opRate.forEach(v => { h += `<td style="${tdStyle}color:${v>=0?'#4ade80':'#f87171'}">${v}%</td>`; });
   h += '</tr></tbody>';
   tbl.innerHTML = h;
+
+  // ── 월간 비교표 (매출 / 영업이익 전월 대비) ──────────────────────────
+  buildMonthComparison(months, labels, rev, op, gpRate, opRate);
+}
+
+function buildMonthComparison(months, labels, rev, op, gpRate, opRate) {
+  const wrap = document.getElementById('plMonthComp');
+  if (!wrap) return;
+
+  const fmt2 = n => n < 0 ? '(' + Math.abs(n).toLocaleString() + ')' : n.toLocaleString();
+  const fmtPct = (n, prev) => {
+    if (!prev) return '-';
+    const r = ((n - prev) / Math.abs(prev) * 100).toFixed(1);
+    return (r >= 0 ? '+' : '') + r + '%';
+  };
+  const arw = (a, b) => a > b ? '▲' : a < b ? '▼' : '─';
+  const arwCls = (a, b) => a > b ? 'pos' : a < b ? 'neg' : '';
+
+  let h = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead>
+      <tr style="background:var(--surface2)">
+        <th style="padding:10px 14px;text-align:left;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border);min-width:90px">월</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">매출액</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">전월대비</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">증감율</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">영업이익</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">전월대비</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">증감율</th>
+        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">영업이익률</th>
+      </tr>
+    </thead><tbody>`;
+
+  rev.forEach((r, i) => {
+    const o = op[i];
+    const prevR = i > 0 ? rev[i-1] : null;
+    const prevO = i > 0 ? op[i-1] : null;
+    const dR = prevR !== null ? r - prevR : null;
+    const dO = prevO !== null ? o - prevO : null;
+    const isLast = i === rev.length - 1;
+    const rowBg = isLast ? 'background:rgba(99,102,241,.08)' : (i % 2 === 0 ? '' : 'background:rgba(255,255,255,.02)');
+
+    h += `<tr style="${rowBg};border-bottom:1px solid rgba(46,51,80,.4)">
+      <td style="padding:9px 14px;color:${isLast?'var(--text)':'var(--sub)'};font-weight:${isLast?700:400}">${months[i]}</td>
+      <td style="padding:9px 14px;text-align:right;color:var(--text)">${r.toLocaleString()}</td>
+      <td style="padding:9px 14px;text-align:right" class="${dR !== null ? arwCls(r, prevR) : ''}">${dR !== null ? arw(r,prevR)+' '+fmt2(dR) : '-'}</td>
+      <td style="padding:9px 14px;text-align:right" class="${dR !== null ? arwCls(r, prevR) : ''}">${fmtPct(r, prevR)}</td>
+      <td style="padding:9px 14px;text-align:right" class="${o>=0?'pos':'neg'}">${fmt2(o)}</td>
+      <td style="padding:9px 14px;text-align:right" class="${dO !== null ? arwCls(o, prevO) : ''}">${dO !== null ? arw(o,prevO)+' '+fmt2(dO) : '-'}</td>
+      <td style="padding:9px 14px;text-align:right" class="${dO !== null ? arwCls(o, prevO) : ''}">${fmtPct(o, prevO)}</td>
+      <td style="padding:9px 14px;text-align:right" class="${opRate[i]>=0?'pos':'neg'}">${opRate[i]}%</td>
+    </tr>`;
+  });
+
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
 }
 
 const _origST = showTab;
