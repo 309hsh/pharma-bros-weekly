@@ -276,6 +276,27 @@ td.item-label { padding-left:40px; }
 // logout handled above
 // session check handled above
 
+
+// ── 전역 변수 선언 ──────────────────────────────────────────────────────
+let WEEKS=[], INCOME={}, EXPENSE={}, ISSUES_DATA=[], MONTH_GROUPS={};
+let totalInc=[], totalExp=[], net=[], APR=[], MAY=[];
+let apr_inc=0, apr_exp=0, may_inc=0, may_exp=0;
+const charts={};
+const COLORS=['#4ade80','#f87171','#60a5fa','#a78bfa','#fbbf24','#fb923c','#2dd4bf','#f472b6','#818cf8'];
+const gc='rgba(46,51,80,0.8)';
+Chart.defaults.color='#8b90b0';
+Chart.defaults.font.family="'Noto Sans KR',sans-serif";
+const fmt=n=>(!n&&n!==0)?'-':Math.round(n).toLocaleString('ko-KR');
+const fmtNet=n=>(!n&&n!==0)?'-':(n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
+
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
 function computeDerived() {
   totalInc = WEEKS.map((_,i)=>Object.values(INCOME).reduce((s,v)=>s+(v[i]||0),0));
   totalExp = WEEKS.map((_,i)=>Object.values(EXPENSE).reduce((s,v)=>s+(v[i]||0),0));
