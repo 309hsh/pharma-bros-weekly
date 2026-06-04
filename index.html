@@ -473,7 +473,23 @@ window.showTab = function(name, btn) {
 
 init(){
   loadMemos();
-  if (await loadData()) renderAll();
+  
+async function loadData() {
+  try {
+    const d = window.__INJECTED_DATA__;
+    if (!d) throw new Error('no data');
+    WEEKS=d.weeks||[]; INCOME=d.income||{}; EXPENSE=d.expense||{};
+    ISSUES_DATA=d.issues||[]; MONTH_GROUPS=d.month_groups||{};
+    document.getElementById('weekLabel').textContent = d.week_label||WEEKS[WEEKS.length-1]||'';
+    if(d.period) document.getElementById('periodBadge').textContent = '2026. '+d.period;
+    const n=new Date();
+    document.getElementById('lastUpdated').textContent =
+      n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0')+' 기준';
+    return true;
+  } catch(e) { console.error('loadData:',e); return false; }
+}
+
+if (await loadData()) renderAll();
   setInterval(async()=>{if(await loadData())renderAll();}, 10*60*1000);
 }
 
