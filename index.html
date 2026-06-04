@@ -168,29 +168,48 @@ td.il{padding-left:40px}
     <div class="ig" id="issueGrid"></div>
   </div>
   <div id="tab-pl" class="tp">
-    <div class="kg" id="plKpi" style="grid-template-columns:repeat(3,1fr)"></div>
-    <div class="tc" style="margin-bottom:24px">
-      <div class="th" style="flex-wrap:wrap;gap:12px">
-        <span style="font-size:14px;font-weight:600">📊 기간별 손익 비교 분석</span>
-        <div style="display:flex;align-items:center;gap:10px">
-          <label style="font-size:12px;color:var(--sub)">기준 월:</label>
-          <select id="plSel" onchange="buildPlAnalysis()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-size:12px;padding:5px 10px;border-radius:6px;outline:none;cursor:pointer"></select>
-          <span style="font-size:11px;color:var(--sub)">전월 · 전년 동월과 자동 비교</span>
-        </div>
+    <!-- 서브탭 -->
+    <div style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--bd);padding-bottom:0">
+      <button id="plst-all" onclick="plSubTab('all')" style="background:none;border:none;color:var(--tx);font-size:13px;font-weight:600;padding:10px 20px;cursor:pointer;border-bottom:2px solid var(--ac);margin-bottom:-1px">📈 전체 요약</button>
+      <button id="plst-mon" onclick="plSubTab('mon')" style="background:none;border:none;color:var(--sub);font-size:13px;font-weight:500;padding:10px 20px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">📊 월별 상세</button>
+    </div>
+
+    <!-- 전체 요약 -->
+    <div id="pl-all">
+      <div class="kg" id="plKpi" style="grid-template-columns:repeat(3,1fr)"></div>
+      <div class="cc" style="margin-bottom:24px">
+        <div class="ct">매출액 / 영업이익 월별 추이 <span class="cs">단위: 백만원</span></div>
+        <div style="position:relative;height:320px"><canvas id="cPL"></canvas></div>
       </div>
-      <div style="overflow-x:auto" id="plAna"></div>
+      <div class="cg2" style="margin-bottom:24px">
+        <div class="cc"><div class="ct">매출총이익률 <span class="cs">%</span></div><div style="position:relative;height:240px"><canvas id="cGP"></canvas></div></div>
+        <div class="cc"><div class="ct">영업이익률 <span class="cs">%</span></div><div style="position:relative;height:240px"><canvas id="cOP"></canvas></div></div>
+      </div>
+      <div class="tc">
+        <div class="th"><span style="font-size:14px;font-weight:600">전체 월별 손익 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div>
+        <div style="overflow-x:auto"><table id="tPL" style="width:100%;border-collapse:collapse;font-size:12px"></table></div>
+      </div>
     </div>
-    <div class="cc" style="margin-bottom:24px">
-      <div class="ct">월별 매출액 / 영업이익 추이 <span class="cs">단위: 백만원</span></div>
-      <div style="position:relative;height:300px"><canvas id="cPL"></canvas></div>
-    </div>
-    <div class="cg2" style="margin-bottom:24px">
-      <div class="cc"><div class="ct">매출총이익률 <span class="cs">%</span></div><div style="position:relative;height:220px"><canvas id="cGP"></canvas></div></div>
-      <div class="cc"><div class="ct">영업이익률 <span class="cs">%</span></div><div style="position:relative;height:220px"><canvas id="cOP"></canvas></div></div>
-    </div>
-    <div class="tc">
-      <div class="th"><span style="font-size:14px;font-weight:600">전체 월별 손익 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div>
-      <div style="overflow-x:auto"><table id="tPL" style="width:100%;border-collapse:collapse;font-size:12px"></table></div>
+
+    <!-- 월별 상세 -->
+    <div id="pl-mon" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px 20px;background:var(--sf);border:1px solid var(--bd);border-radius:10px">
+        <span style="font-size:13px;font-weight:600">기준 월 선택</span>
+        <select id="plSel" onchange="buildPlAnalysis()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-size:13px;padding:6px 14px;border-radius:8px;outline:none;cursor:pointer"></select>
+        <span style="font-size:12px;color:var(--sub)">→ 전월 / 전년 동월과 자동 비교</span>
+      </div>
+      <!-- KPI 비교 카드 -->
+      <div id="plMonKpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px"></div>
+      <!-- 비교 테이블 -->
+      <div class="tc" style="margin-bottom:24px">
+        <div class="th"><span style="font-size:14px;font-weight:600">항목별 전월 / 전년 동월 비교</span><span style="font-size:12px;color:var(--sub)">단위: 백만원 | ▲증가 ▼감소</span></div>
+        <div style="overflow-x:auto" id="plAna"></div>
+      </div>
+      <!-- 비교 차트 -->
+      <div class="cg2">
+        <div class="cc"><div class="ct" id="plBarTitle">매출액 비교</div><div style="position:relative;height:260px"><canvas id="cPlComp"></canvas></div></div>
+        <div class="cc"><div class="ct" id="plBarTitle2">영업이익 비교</div><div style="position:relative;height:260px"><canvas id="cPlComp2"></canvas></div></div>
+      </div>
     </div>
   </div>
 </div>
