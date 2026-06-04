@@ -2,6 +2,40 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script>
+(function() {
+  var PW = 'pharma-bros';
+  var SK = 'pb_w_auth';
+  function unlock() {
+    var el = document.getElementById('lockScreen');
+    if (el) el.style.display = 'none';
+  }
+  function check() {
+    var inp = document.getElementById('pwInput');
+    var err = document.getElementById('pwError');
+    if (inp && inp.value === PW) {
+      try { sessionStorage.setItem(SK, String(Date.now() + 43200000)); } catch(e) {}
+      unlock();
+    } else if (inp) {
+      if (err) err.textContent = '비밀번호가 틀렸습니다.';
+      inp.value = '';
+      inp.focus();
+    }
+  }
+  try {
+    var t = sessionStorage.getItem(SK);
+    if (t && Date.now() < parseInt(t)) { 
+      document.addEventListener('DOMContentLoaded', unlock);
+    }
+  } catch(e) {}
+  window.checkPw = check;
+  window.logout = function() {
+    try { sessionStorage.removeItem(SK); } catch(e) {}
+    location.reload();
+  };
+})();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>파마브로스 | 주간 자금 현황</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -235,62 +269,12 @@ td.item-label { padding-left:40px; }
 
 <script>
 // ── 비밀번호 (Code.gs에서 자동 주입) ─────────────────────────────────────
-const PW = 'pharma-bros';
-const SK = 'pb_weekly_auth';
+// PW handled above
+// SK handled above
 
-function checkPw() {
-  if (document.getElementById('pwInput').value === PW) {
-    sessionStorage.setItem(SK, Date.now() + 12*3600*1000);
-    document.getElementById('lockScreen').style.display = 'none';
-  } else {
-    document.getElementById('pwError').textContent = '비밀번호가 틀렸습니다.';
-    document.getElementById('pwInput').value = '';
-    document.getElementById('pwInput').focus();
-  }
-}
-function logout() { sessionStorage.removeItem(SK); location.reload(); }
-if (sessionStorage.getItem(SK) && Date.now() < parseInt(sessionStorage.getItem(SK))) {
-  document.getElementById('lockScreen').style.display = 'none';
-} else {
-  setTimeout(() => document.getElementById('pwInput')?.focus(), 150);
-}
-
-// ── 상태 ─────────────────────────────────────────────────────────────────
-let WEEKS=[], INCOME={}, EXPENSE={}, ISSUES_DATA=[], MONTH_GROUPS={};
-let totalInc=[], totalExp=[], net=[], APR=[], MAY=[];
-let apr_inc=0, apr_exp=0, may_inc=0, may_exp=0;
-const charts = {};
-const COLORS = ['#4ade80','#f87171','#60a5fa','#a78bfa','#fbbf24','#fb923c','#2dd4bf','#f472b6','#818cf8'];
-const gc = 'rgba(46,51,80,0.8)';
-Chart.defaults.color = '#8b90b0';
-Chart.defaults.font.family = "'Noto Sans KR',sans-serif";
-
-const fmt    = n => (!n && n!==0) ? '-' : Math.round(n).toLocaleString('ko-KR');
-const fmtNet = n => (!n && n!==0) ? '-' : (n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
-
-function showTab(name, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  btn.classList.add('active');
-  if (name==='issues' && WEEKS.length) buildMemoUI();
-}
-
-// ── 데이터 로드 (GAS 자신에게 요청) ──────────────────────────────────────
-async function loadData() {
-  try {
-    const d = window.__INJECTED_DATA__;
-    if (!d) throw new Error('no data');
-    WEEKS=d.weeks||[];INCOME=d.income||{};EXPENSE=d.expense||{};
-    ISSUES_DATA=d.issues||[];MONTH_GROUPS=d.month_groups||{};
-    document.getElementById('weekLabel').textContent=d.week_label||WEEKS[WEEKS.length-1]||'';
-    if(d.period)document.getElementById('periodBadge').textContent='2026. '+d.period;
-    const now=new Date();
-    document.getElementById('lastUpdated').textContent=
-      now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+' 기준';
-    return true;
-  } catch(e) { console.error(e); return false; }
-}
+// checkPw handled above
+// logout handled above
+// session check handled above
 
 function computeDerived() {
   totalInc = WEEKS.map((_,i)=>Object.values(INCOME).reduce((s,v)=>s+(v[i]||0),0));
