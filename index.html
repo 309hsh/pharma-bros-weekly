@@ -471,9 +471,6 @@ window.showTab = function(name, btn) {
   if (name === 'pl') buildPlTab();
 };
 
-init(){
-  loadMemos();
-  
 async function loadData() {
   try {
     const d = window.__INJECTED_DATA__;
@@ -489,7 +486,9 @@ async function loadData() {
   } catch(e) { console.error('loadData:',e); return false; }
 }
 
-if (await loadData()) renderAll();
+async function init(){
+  loadMemos();
+  if (await loadData()) renderAll();
   setInterval(async()=>{if(await loadData())renderAll();}, 10*60*1000);
 }
 
