@@ -135,6 +135,7 @@ td.il{padding-left:40px}
     <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">주간 자금 입출금 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div><div class="ts"><table id="tWeekly"></table></div></div>
   </div>
   <div id="tab-monthly" class="tp">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px" id="mnKpiNet"></div>
     <div class="kg">
       <div class="kc g"><div class="kl" id="k_m1i">—</div><div class="kv" id="k_m1iv">—</div></div>
       <div class="kc r"><div class="kl" id="k_m1e">—</div><div class="kv" id="k_m1ev">—</div></div>
@@ -250,6 +251,15 @@ function renderKpi(){
   document.getElementById('k_m1ev').textContent=ae.toLocaleString()+' 백만';
   document.getElementById('k_m2iv').textContent=mi.toLocaleString()+' 백만';
   document.getElementById('k_m2ev').textContent=me.toLocaleString()+' 백만';
+  const m1n=ai-ae,m2n=mi-me;
+  document.getElementById('mnKpiNet').innerHTML=[{m:m1,n:m1n,ti:ai,te:ae},{m:m2,n:m2n,ti:mi,te:me}].map(function(x){
+    var c=x.n>=0?'var(--gr)':'var(--rd)';var bt=x.n>=0?'#4ade80':'#f87171';
+    return '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px 28px;border-top:3px solid '+bt+';position:relative;overflow:hidden">'
+      +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px">'+x.m+' 순현금흐름</div>'
+      +'<div style="font-size:30px;font-weight:700;color:'+c+';line-height:1;margin-bottom:8px">'+(x.n>=0?'+':'')+x.n.toLocaleString()+' 백만</div>'
+      +'<div style="font-size:12px;color:var(--sub)">총입금 '+x.ti.toLocaleString()+' &minus; 총출금 '+x.te.toLocaleString()+'</div>'
+      +'</div>';
+  }).join('');
 }
 
 function mk(id,type,d,opts){if(C[id])C[id].destroy();C[id]=new Chart(document.getElementById(id),{type,data:d,options:opts});}
