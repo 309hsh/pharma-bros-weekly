@@ -6,28 +6,17 @@
 <title>파마브로스 | 주간 자금 현황</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// 비밀번호 (독립 실행)
 (function(){
-  var PW='pharma-bros', SK='pb_w2';
-  function hide(){ var e=document.getElementById('lockScreen'); if(e) e.style.display='none'; }
+  var PW='pharma-bros',SK='pb_w2';
+  function hide(){var e=document.getElementById('lockScreen');if(e)e.style.display='none';}
   function checkPw(){
     var inp=document.getElementById('pwInput');
-    if(inp && inp.value===PW){
-      try{ sessionStorage.setItem(SK,String(Date.now()+43200000)); }catch(e){}
-      document.addEventListener('DOMContentLoaded',hide);
-      hide();
-    } else if(inp){
-      var err=document.getElementById('pwError');
-      if(err) err.textContent='비밀번호가 틀렸습니다.';
-      inp.value=''; inp.focus();
-    }
+    if(inp&&inp.value===PW){try{sessionStorage.setItem(SK,String(Date.now()+43200000));}catch(e){}hide();}
+    else if(inp){var er=document.getElementById('pwError');if(er)er.textContent='비밀번호가 틀렸습니다.';inp.value='';inp.focus();}
   }
-  function logout(){ try{sessionStorage.removeItem(SK);}catch(e){} location.reload(); }
-  try{
-    var t=sessionStorage.getItem(SK);
-    if(t&&Date.now()<parseInt(t)) document.addEventListener('DOMContentLoaded',hide);
-  }catch(e){}
-  window.checkPw=checkPw; window.logout=logout;
+  function logout(){try{sessionStorage.removeItem(SK);}catch(e){}location.reload();}
+  try{var t=sessionStorage.getItem(SK);if(t&&Date.now()<parseInt(t))document.addEventListener('DOMContentLoaded',hide);}catch(e){}
+  window.checkPw=checkPw;window.logout=logout;
 })();
 </script>
 <style>
@@ -69,7 +58,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Noto Sans KR',-apple-syst
 .ct{font-size:14px;font-weight:600;margin-bottom:16px}
 .cs{font-size:11px;color:var(--sub)}
 .tc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:24px}
-.th{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.th{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .ts{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{background:var(--sf2);color:var(--sub);font-weight:600;font-size:11px;padding:10px 14px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap;line-height:1.5}
@@ -91,6 +80,8 @@ td.il{padding-left:40px}
 .ititle{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px}
 .idesc{font-size:12px;color:var(--sub);line-height:1.5}
 .tp{display:none}.tp.active{display:block}
+.plsb{background:none;border:none;color:var(--sub);font-size:13px;font-weight:500;padding:10px 22px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.plsb.on{color:var(--tx);font-weight:600;border-bottom-color:var(--ac)}
 @media(max-width:1200px){.kg{grid-template-columns:repeat(2,1fr)}.cg2{grid-template-columns:1fr}.cg3{grid-template-columns:1fr 1fr}}
 @media(max-width:768px){.main{padding:16px}.kg{grid-template-columns:1fr 1fr}.ig{grid-template-columns:1fr}}
 </style>
@@ -109,8 +100,7 @@ td.il{padding-left:40px}
 </div>
 <header class="hd">
   <div style="display:flex;align-items:center;gap:12px">
-    <div class="logo">파마브로스<em>.</em></div>
-    <span class="badge">주간 자금</span>
+    <div class="logo">파마브로스<em>.</em></div><span class="badge">주간 자금</span>
   </div>
   <div class="hr">
     <span class="pb" id="periodBadge">—</span>
@@ -142,26 +132,20 @@ td.il{padding-left:40px}
       <div class="cc"><div class="ct">출금 구성</div><div style="position:relative;height:220px"><canvas id="cED"></canvas></div></div>
       <div class="cc"><div class="ct">주차별 입금 구성</div><div style="position:relative;height:220px"><canvas id="cSB"></canvas></div></div>
     </div>
-    <div class="tc">
-      <div class="th"><span style="font-size:14px;font-weight:600">주간 자금 입출금 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div>
-      <div class="ts"><table id="tWeekly"></table></div>
-    </div>
+    <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">주간 자금 입출금 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div><div class="ts"><table id="tWeekly"></table></div></div>
   </div>
   <div id="tab-monthly" class="tp">
     <div class="kg">
-      <div class="kc g"><div class="kl" id="k_m1i">4월 총입금</div><div class="kv" id="k_m1iv">—</div></div>
-      <div class="kc r"><div class="kl" id="k_m1e">4월 총출금</div><div class="kv" id="k_m1ev">—</div></div>
-      <div class="kc g"><div class="kl" id="k_m2i">5월 총입금</div><div class="kv" id="k_m2iv">—</div></div>
-      <div class="kc r"><div class="kl" id="k_m2e">5월 총출금</div><div class="kv" id="k_m2ev">—</div></div>
+      <div class="kc g"><div class="kl" id="k_m1i">—</div><div class="kv" id="k_m1iv">—</div></div>
+      <div class="kc r"><div class="kl" id="k_m1e">—</div><div class="kv" id="k_m1ev">—</div></div>
+      <div class="kc g"><div class="kl" id="k_m2i">—</div><div class="kv" id="k_m2iv">—</div></div>
+      <div class="kc r"><div class="kl" id="k_m2e">—</div><div class="kv" id="k_m2ev">—</div></div>
     </div>
     <div class="cg2">
       <div class="cc"><div class="ct">월별 입출금 비교</div><div style="position:relative;height:280px"><canvas id="cMB"></canvas></div></div>
       <div class="cc"><div class="ct">매출 항목별 월간 비교</div><div style="position:relative;height:280px"><canvas id="cMI"></canvas></div></div>
     </div>
-    <div class="tc">
-      <div class="th"><span style="font-size:14px;font-weight:600">월별 자금 비교표</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div>
-      <div class="ts"><table id="tMonthly"></table></div>
-    </div>
+    <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">월별 자금 비교표</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div><div class="ts"><table id="tMonthly"></table></div></div>
   </div>
   <div id="tab-issues" class="tp">
     <div style="font-size:13px;font-weight:600;color:var(--sub);margin-bottom:16px">📌 주요 이슈</div>
@@ -169,98 +153,95 @@ td.il{padding-left:40px}
   </div>
   <div id="tab-pl" class="tp">
     <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--bd)">
-      <button id="plst-all" onclick="plSubTab('all')" style="background:none;border:none;color:var(--tx);font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;border-bottom:2px solid var(--ac);margin-bottom:-1px">📈 전체 요약</button>
-      <button id="plst-mon" onclick="plSubTab('mon')" style="background:none;border:none;color:var(--sub);font-size:13px;font-weight:500;padding:10px 22px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px">📊 월별 상세</button>
+      <button class="plsb on" id="psb-all" onclick="plSub('all')">📈 전체 요약</button>
+      <button class="plsb" id="psb-mon" onclick="plSub('mon')">📊 월별 상세</button>
     </div>
     <div id="pl-all">
-      <div class="kg" id="plKpi" style="grid-template-columns:repeat(3,1fr)"></div>
-      <div class="cc" style="margin-bottom:24px">
-        <div class="ct">매출액 / 영업이익 월별 추이 <span class="cs">단위: 백만원</span></div>
-        <div style="position:relative;height:320px"><canvas id="cPL"></canvas></div>
-      </div>
-      <div class="cg2" style="margin-bottom:24px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px" id="plKpi"></div>
+      <div class="cc" style="margin-bottom:24px"><div class="ct">매출액 / 영업이익 월별 추이 <span class="cs">단위: 백만원</span></div><div style="position:relative;height:320px"><canvas id="cPL"></canvas></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
         <div class="cc"><div class="ct">매출총이익률 <span class="cs">%</span></div><div style="position:relative;height:240px"><canvas id="cGP"></canvas></div></div>
         <div class="cc"><div class="ct">영업이익률 <span class="cs">%</span></div><div style="position:relative;height:240px"><canvas id="cOP"></canvas></div></div>
       </div>
-      <div class="tc">
-        <div class="th"><span style="font-size:14px;font-weight:600">전체 월별 손익 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div>
-        <div style="overflow-x:auto"><table id="tPL" style="width:100%;border-collapse:collapse;font-size:12px"></table></div>
-      </div>
+      <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">전체 월별 손익 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div><div style="overflow-x:auto"><table id="tPL" style="width:100%;border-collapse:collapse;font-size:12px"></table></div></div>
     </div>
     <div id="pl-mon" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px 20px;background:var(--sf);border:1px solid var(--bd);border-radius:10px">
         <span style="font-size:13px;font-weight:600">기준 월 선택</span>
-        <select id="plSel" onchange="buildPlAnalysis()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-size:13px;padding:6px 14px;border-radius:8px;outline:none;cursor:pointer"></select>
-        <span style="font-size:12px;color:var(--sub)">→ 전월 / 전년 동월 자동 비교</span>
+        <select id="plSel" onchange="buildPlMonth()" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-size:13px;padding:6px 14px;border-radius:8px;outline:none;cursor:pointer"></select>
+        <span style="font-size:12px;color:var(--sub)">전월 · 전년 동월 자동 비교</span>
       </div>
-      <div id="plMonKpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px" id="plMonKpi"></div>
       <div class="tc" style="margin-bottom:24px">
-        <div class="th"><span style="font-size:14px;font-weight:600">항목별 전월 / 전년 동월 비교</span><span style="font-size:12px;color:var(--sub)">단위: 백만원 | ▲증가 ▼감소</span></div>
-        <div style="overflow-x:auto" id="plAna"></div>
+        <div class="th"><span style="font-size:14px;font-weight:600">항목별 전월 / 전년 동월 비교</span><span style="font-size:12px;color:var(--sub)">▲증가 ▼감소</span></div>
+        <div style="overflow-x:auto" id="plMonTbl"></div>
       </div>
-      <div class="cg2">
-        <div class="cc"><div class="ct" id="plBT1">매출액 비교</div><div style="position:relative;height:260px"><canvas id="cPlC1"></canvas></div></div>
-        <div class="cc"><div class="ct" id="plBT2">영업이익 비교</div><div style="position:relative;height:260px"><canvas id="cPlC2"></canvas></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="cc"><div class="ct" id="plCT1">매출액 비교</div><div style="position:relative;height:260px"><canvas id="cPC1"></canvas></div></div>
+        <div class="cc"><div class="ct" id="plCT2">영업이익 비교</div><div style="position:relative;height:260px"><canvas id="cPC2"></canvas></div></div>
       </div>
     </div>
   </div>
 </div>
 <script>
 const D = {"week_label":"5월 5주차","period":"2026. 3/26 ~ 6/3","weeks":["4월1주","4월2주","4월3주","4월4주","4월5주","5월1주","5월2주","5월3주","5월4주","5월5주"],"month_groups":{"4월":[0,1,2,3,4],"5월":[5,6,7,8,9]},"income":{"공동구매 매출":[528,775,851,814,671,328,834,700,717,576],"PB 매출":[191,143,118,127,130,151,131,125,119,121],"화장품 매출":[5,3,3,6,3,5,8,18,3,23],"업체 매출":[0,28,0,28,34,14,25,24,30,16],"MCN 매출":[0,0,4,0,3,17,1,0,1,15],"이자수익":[0,0,0,0,0,0,0,0,0,0],"기타":[0,3,0,0,0,0,0,0,0,8]},"expense":{"판매수수료":[661,522,369,629,215,464,614,536,452,264],"상품매입":[421,112,322,7,22,408,63,398,258,184],"인건비":[264,0,0,0,0,238,0,0,0,254],"광고선전비":[10,10,8,17,1,12,2,16,13,23],"지급수수료":[20,23,41,7,7,24,58,17,8,27],"법인카드":[0,0,141,0,0,0,0,120,0,0],"포장비":[0,0,94,0,0,0,0,83,0,0],"세금":[42,0,58,0,281,0,85,0,0,0],"임차료":[39,0,0,28,2,35,0,0,42,41],"임차보증금":[0,0,0,0,0,90,0,0,0,0],"퇴직급여":[0,0,6,16,0,0,0,0,0,0],"자산(인테리어)":[19,0,0,0,21,0,0,0,0,0],"기타비용":[7,0,5,8,3,8,1,2,3,7]},"issues":[{"tag":"회계","title":"2025년 법인세 2차 납부","level":"high","desc":"2차: 17,202,890원\n납부 기한: 2026년 6월 30일"},{"tag":"회계","title":"4월 결산 완료","level":"high","desc":"매출: 3,042백만원\n영업이익: -264백만원"},{"tag":"IR","title":"마이랩스 인수 진행 중","level":"high","desc":"기업가치 5억 확정 / KB동의 완료\n계약서 날인(파마브로스 완료)"},{"tag":"회계","title":"파마브로스 → 명동약국 매출 처리","level":"high","desc":"1월~5월 명동약국 매출 처리 진행\n유관부서 미팅 후 확정"}],"unit":"백만원","pl":{"months":["2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12"],"labels":["'25.1","2","3","4","5","6","7","8","9","10","11","12"],"items":{"매출액":[2799,2532,2835,2613,2535,2726,2449,2600,3502,2077,4234,2238],"매출원가":[460,695,817,512,841,621,633,640,704,502,636,492],"매출총이익":[2339,1837,2018,2102,1694,2105,1816,1960,2797,1575,3598,1746],"판매비와관리비":[1304,1736,1941,1509,2167,1834,1463,2160,1767,2422,2662,2760]," ├ 직원급여":[143,151,168,185,200,201,200,199,212,217,246,218]," ├ 퇴직급여":[-3,10,12,0,4,5,3,45,20,0,54,33]," ├ 복리후생비":[28,13,12,16,14,19,20,19,22,21,19,42]," ├ 판매수수료":[898,1321,1544,993,1729,1378,980,1628,1156,1917,1986,1947]," ├ 포장비":[75,58,70,58,50,48,50,60,76,52,67,73]," ├ 지급수수료":[71,89,78,133,83,82,75,91,56,86,57,218]," ├ 광고선전비":[13,11,8,9,4,10,46,28,55,31,42,60]," ├ 지급임차료":[24,24,0,48,32,32,32,32,32,32,32,59]," ├ 세금과공과금":[5,6,7,7,5,8,8,9,9,9,11,11]," ├ 소모품비":[4,6,5,9,4,12,7,10,77,14,107,45]," ├ 경상연구개발비":[29,29,25,21,23,25,23,23,24,28,23,25]," └ 기타판관비":[16,17,13,30,20,14,18,16,29,16,19,31],"영업이익":[1035,101,77,593,-473,271,353,-200,1030,-847,935,-1015]}},"week_dates":["3/26~4/1","4/2~4/8","4/9~4/15","4/16~4/22","4/23~4/29","4/30~5/6","5/7~5/13","5/14~5/20","5/21~5/27","5/28~6/3"],"pl_updated":true};
+const WEEKS=D.weeks||[],INCOME=D.income||{},EXPENSE=D.expense||{};
+const ISSUES=D.issues||[],MG=D.month_groups||{},WD=D.week_dates||[];
+const PL=D.pl;
 
-// ── 초기화 ────────────────────────────────────────────────────────────
-document.getElementById('weekLabel').textContent = D.week_label || D.weeks[D.weeks.length-1] || '';
-if(D.period) document.getElementById('periodBadge').textContent = '2026. ' + D.period;
+document.getElementById('weekLabel').textContent=D.week_label||WEEKS[WEEKS.length-1]||'';
+if(D.period)document.getElementById('periodBadge').textContent='2026. '+D.period;
 
-const WEEKS = D.weeks || [];
-const INCOME = D.income || {};
-const EXPENSE = D.expense || {};
-const ISSUES = D.issues || [];
-const MG = D.month_groups || {};
-const WD = D.week_dates || [];
-const PL = D.pl || null;
-
-let tI=[], tE=[], net=[], APR=[], MAY=[], ai=0, ae=0, mi=0, me=0;
+let tI=[],tE=[],net=[],APR=[],MAY=[],ai=0,ae=0,mi=0,me=0;
 const C={};
 const CLR=['#4ade80','#f87171','#60a5fa','#a78bfa','#fbbf24','#fb923c','#2dd4bf','#f472b6','#818cf8'];
 const GC='rgba(46,51,80,.8)';
 Chart.defaults.color='#8b90b0';
 Chart.defaults.font.family="'Noto Sans KR',sans-serif";
-
-const F = n => n===null||n===undefined?'-':Math.round(n).toLocaleString('ko-KR');
-const FN = n => n===null||n===undefined?'-':(n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
+const F=n=>(!n&&n!==0)?'-':Math.round(n).toLocaleString('ko-KR');
+const FN=n=>(!n&&n!==0)?'-':(n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
 
 function showTab(name,btn){
   document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
-  if(name==='pl') buildPlTab();
+  if(name==='pl')buildPlAll();
+}
+
+function plSub(name){
+  document.getElementById('pl-all').style.display=name==='all'?'':'none';
+  document.getElementById('pl-mon').style.display=name==='mon'?'':'none';
+  ['all','mon'].forEach(n=>{
+    const b=document.getElementById('psb-'+n);
+    b.classList.toggle('on',n===name);
+  });
+  if(name==='mon')buildPlMonth();
 }
 
 function init(){
-  const n=Object.keys(MG), N=WEEKS.length;
-  APR = MG[n[0]] || Array.from({length:Math.ceil(N/2)},(_,i)=>i);
-  MAY = MG[n[1]] || Array.from({length:Math.floor(N/2)},(_,i)=>Math.ceil(N/2)+i);
-  tI = WEEKS.map((_,i)=>Object.values(INCOME).reduce((s,v)=>s+(v[i]||0),0));
-  tE = WEEKS.map((_,i)=>Object.values(EXPENSE).reduce((s,v)=>s+(v[i]||0),0));
-  net = WEEKS.map((_,i)=>tI[i]-tE[i]);
+  const mn=Object.keys(MG),N=WEEKS.length;
+  APR=MG[mn[0]]||Array.from({length:Math.ceil(N/2)},(_,i)=>i);
+  MAY=MG[mn[1]]||Array.from({length:Math.floor(N/2)},(_,i)=>Math.ceil(N/2)+i);
+  tI=WEEKS.map((_,i)=>Object.values(INCOME).reduce((s,v)=>s+(v[i]||0),0));
+  tE=WEEKS.map((_,i)=>Object.values(EXPENSE).reduce((s,v)=>s+(v[i]||0),0));
+  net=WEEKS.map((_,i)=>tI[i]-tE[i]);
   const sm=(a,ix)=>ix.reduce((s,i)=>s+(a[i]||0),0);
-  ai=sm(tI,APR); ae=sm(tE,APR); mi=sm(tI,MAY); me=sm(tE,MAY);
-  renderKpi(); buildCharts(); buildWeeklyTable(); buildMonthlyTable(); buildIssues();
+  ai=sm(tI,APR);ae=sm(tE,APR);mi=sm(tI,MAY);me=sm(tE,MAY);
+  renderKpi();buildCharts();buildWeeklyTable();buildMonthlyTable();buildIssues();
   const now=new Date();
   document.getElementById('lastUpdated').textContent=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+' 기준';
 }
 
 function renderKpi(){
-  const ti=tI.reduce((s,v)=>s+v,0), te=tE.reduce((s,v)=>s+v,0), tn=net.reduce((s,v)=>s+v,0);
+  const ti=tI.reduce((s,v)=>s+v,0),te=tE.reduce((s,v)=>s+v,0),tn=net.reduce((s,v)=>s+v,0);
   document.getElementById('k_ti').textContent=ti.toLocaleString()+' 백만';
   document.getElementById('k_te').textContent=te.toLocaleString()+' 백만';
   const ne=document.getElementById('k_nt');
-  ne.textContent=(tn<0?'':'+')+tn.toLocaleString()+' 백만'; ne.style.color=tn>=0?'var(--bl)':'var(--rd)';
+  ne.textContent=(tn<0?'':'+')+tn.toLocaleString()+' 백만';ne.style.color=tn>=0?'var(--bl)':'var(--rd)';
   document.getElementById('k_av').textContent=Math.round(ti/(WEEKS.length||1)).toLocaleString()+' 백만';
   document.getElementById('k_wk').textContent=WEEKS.length+'주 합산';
-  const mn=Object.keys(MG), m1=mn[0]||'4월', m2=mn[1]||'5월';
+  const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
   document.getElementById('k_m1i').textContent=m1+' 총입금';
   document.getElementById('k_m1e').textContent=m1+' 총출금';
   document.getElementById('k_m2i').textContent=m2+' 총입금';
@@ -271,19 +252,19 @@ function renderKpi(){
   document.getElementById('k_m2ev').textContent=me.toLocaleString()+' 백만';
 }
 
-function mk(id,type,data,opts){if(C[id])C[id].destroy();C[id]=new Chart(document.getElementById(id),{type,data,options:opts});}
+function mk(id,type,d,opts){if(C[id])C[id].destroy();C[id]=new Chart(document.getElementById(id),{type,data:d,options:opts});}
 const SC=()=>({x:{grid:{color:GC},ticks:{font:{size:11}}},y:{grid:{color:GC},ticks:{callback:v=>v.toLocaleString()+'백만'}}});
 
 function buildCharts(){
   mk('cBar','bar',{labels:WEEKS,datasets:[{label:'입금',data:tI,backgroundColor:'rgba(74,222,128,.7)',borderColor:'#4ade80',borderWidth:1,borderRadius:4},{label:'출금',data:tE,backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:4}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
-  mk('cNet','line',{labels:WEEKS,datasets:[{label:'순현금흐름',data:net,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.12)',fill:true,tension:.4,pointBackgroundColor:net.map(v=>v>=0?'#4ade80':'#f87171'),pointRadius:5}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:SC()});
-  const ik=Object.keys(INCOME), iv=ik.map(x=>INCOME[x].reduce((s,n)=>s+n,0));
+  mk('cNet','line',{labels:WEEKS,datasets:[{label:'순현금',data:net,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.12)',fill:true,tension:.4,pointBackgroundColor:net.map(v=>v>=0?'#4ade80':'#f87171'),pointRadius:5}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:SC()});
+  const ik=Object.keys(INCOME),iv=ik.map(x=>INCOME[x].reduce((s,n)=>s+n,0));
   mk('cID','doughnut',{labels:ik,datasets:[{data:iv,backgroundColor:CLR,borderWidth:2,borderColor:'#1a1d27'}]},{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}}});
-  const ek=Object.keys(EXPENSE), ev=ek.map(x=>EXPENSE[x].reduce((s,n)=>s+n,0));
+  const ek=Object.keys(EXPENSE),ev=ek.map(x=>EXPENSE[x].reduce((s,n)=>s+n,0));
   mk('cED','doughnut',{labels:ek,datasets:[{data:ev,backgroundColor:[...CLR].reverse(),borderWidth:2,borderColor:'#1a1d27'}]},{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}}});
   const sk=Object.keys(INCOME).slice(0,5);
   mk('cSB','bar',{labels:WEEKS,datasets:sk.map((x,i)=>({label:x,data:INCOME[x],backgroundColor:CLR[i],borderWidth:0,borderRadius:2}))},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}}},scales:{x:{stacked:true,grid:{color:GC},ticks:{font:{size:10}}},y:{stacked:true,grid:{color:GC},ticks:{callback:v=>v.toLocaleString()}}}});
-  const mn=Object.keys(MG), m1=mn[0]||'4월', m2=mn[1]||'5월';
+  const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
   mk('cMB','bar',{labels:[m1,m2],datasets:[{label:'입금',data:[ai,mi],backgroundColor:'rgba(74,222,128,.7)',borderColor:'#4ade80',borderWidth:1,borderRadius:6},{label:'출금',data:[ae,me],backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:6},{label:'순현금',data:[ai-ae,mi-me],backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
   const k5=Object.keys(INCOME).slice(0,5);
   mk('cMI','bar',{labels:k5,datasets:[{label:m1,data:k5.map(x=>APR.reduce((s,i)=>s+(INCOME[x][i]||0),0)),backgroundColor:'rgba(74,222,128,.5)',borderColor:'#4ade80',borderWidth:1,borderRadius:4},{label:m2,data:k5.map(x=>MAY.reduce((s,i)=>s+(INCOME[x][i]||0),0)),backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
@@ -304,7 +285,7 @@ function buildWeeklyTable(){
 }
 
 function buildMonthlyTable(){
-  const mn=Object.keys(MG), m1=mn[0]||'4월', m2=mn[1]||'5월';
+  const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
   const t=document.getElementById('tMonthly');
   let h=`<thead><tr><th>구분</th><th>항목</th><th>${m1}</th><th>${m2}</th><th>증감</th><th>증감율</th></tr></thead><tbody>`;
   const row=(lb,a,m,sub)=>{const d=m-a,r=a?(d/a*100).toFixed(1):null,dc=d>=0?'pos':'neg';h+=`<tr><td class="${sub?'il':''}">${lb}</td><td>${F(a)||'-'}</td><td>${F(m)||'-'}</td><td class="${dc}">${a||m?FN(d):'-'}</td><td class="${dc}">${r!==null?(d>=0?'+':'')+r+'%':'-'}</td></tr>`;};
@@ -319,192 +300,150 @@ function buildMonthlyTable(){
 }
 
 function buildIssues(){
-  const g=document.getElementById('issueGrid');
-  g.innerHTML=ISSUES.map(d=>`<div class="ic"><div class="id ${d.level}"></div><div><span class="itag">${d.tag||''}</span><div class="ititle">${d.title||''}</div><div class="idesc">${(d.desc||'').replace(/\n/g,'<br>')}</div></div></div>`).join('');
+  document.getElementById('issueGrid').innerHTML=ISSUES.map(d=>`<div class="ic"><div class="id ${d.level}"></div><div><span class="itag">${d.tag||''}</span><div class="ititle">${d.title||''}</div><div class="idesc">${(d.desc||'').replace(/\n/g,'<br>')}</div></div></div>`).join('');
 }
 
-// ── 월간 손익 탭 ─────────────────────────────────────────────────────────
-var _PLD = null;
+// ══ 월간손익 - 전체 요약 ════════════════════════════════════════════
+function buildPlAll(){
+  if(!PL||!PL.items||!PL.months){
+    document.getElementById('plKpi').innerHTML='<p style="padding:20px;color:var(--sub)">손익 데이터가 없습니다.</p>';
+    return;
+  }
+  const items=PL.items,months=PL.months,labels=PL.labels||months;
+  const n=months.length,last=n-1;
+  const rev=items['매출액']||Array(n).fill(0);
+  const op=items['영업이익']||Array(n).fill(0);
+  const gp=items['매출총이익']||Array(n).fill(0);
+  const gpR=gp.map((v,i)=>rev[i]?+(v/rev[i]*100).toFixed(1):0);
+  const opR=op.map((v,i)=>rev[i]?+(v/rev[i]*100).toFixed(1):0);
 
-function plSubTab(name) {
-  document.getElementById('pl-all').style.display = name==='all'?'':'none';
-  document.getElementById('pl-mon').style.display = name==='mon'?'':'none';
-  ['all','mon'].forEach(function(n){
-    var btn = document.getElementById('plst-'+n);
-    var active = n===name;
-    btn.style.color = active ? 'var(--tx)' : 'var(--sub)';
-    btn.style.fontWeight = active ? '600' : '500';
-    btn.style.borderBottom = active ? '2px solid var(--ac)' : '2px solid transparent';
-  });
-  if(name==='mon' && _PLD) buildPlAnalysis();
-}
-
-function buildPlTab(){
-  if(!PL||!PL.items){ document.getElementById('plKpi').innerHTML='<p style="color:var(--sub);padding:20px">손익 데이터 없음</p>'; return; }
-  _PLD = PL;
-  var months=PL.months, labels=PL.labels, items=PL.items;
-  var n=months.length, last=n-1;
-  var rev=items['매출액']||Array(n).fill(0);
-  var op =items['영업이익']||Array(n).fill(0);
-  var gp =items['매출총이익']||Array(n).fill(0);
-  var gpR=gp.map(function(v,i){ return rev[i]?+(v/rev[i]*100).toFixed(1):0; });
-  var opR=op.map(function(v,i){ return rev[i]?+(v/rev[i]*100).toFixed(1):0; });
-
-  // KPI 카드
-  var kpiHtml=[
-    {lb:'최근월 매출',val:rev[last],c:'#60a5fa',sub:months[last],prev:rev[last-1]||null},
-    {lb:'최근월 영업이익',val:op[last],c:op[last]>=0?'#4ade80':'#f87171',sub:months[last],prev:op[last-1]||null},
-    {lb:'최근월 영업이익률',val:null,rate:opR[last]+'%',c:op[last]>=0?'#60a5fa':'#f87171',sub:months[last],prevRate:opR[last-1]||null},
-  ].map(function(k){
-    var sub2='';
-    if(k.val!==null && k.prev!==null){
-      var d=k.val-k.prev, r=k.prev?+(d/Math.abs(k.prev)*100).toFixed(1):null;
-      var c=d>=0?'#4ade80':'#f87171';
-      sub2='<div style="font-size:11px;color:'+c+';margin-top:6px">'+(d>=0?'▲':'▼')+' '+Math.abs(d).toLocaleString()+(r?' ('+r+'%)':'')+' 전월비</div>';
+  // KPI
+  document.getElementById('plKpi').innerHTML=[
+    {lb:'최근월 매출액',v:rev[last],c:'#60a5fa',pv:last>0?rev[last-1]:null,isPct:false},
+    {lb:'최근월 영업이익',v:op[last],c:op[last]>=0?'#4ade80':'#f87171',pv:last>0?op[last-1]:null,isPct:false},
+    {lb:'최근월 영업이익률',v:opR[last],c:op[last]>=0?'#60a5fa':'#f87171',pv:last>0?opR[last-1]:null,isPct:true},
+  ].map(k=>{
+    let diff='';
+    if(k.pv!==null){
+      const d=k.isPct?+(k.v-k.pv).toFixed(1):k.v-k.pv;
+      const r=!k.isPct&&k.pv?+(d/Math.abs(k.pv)*100).toFixed(1):null;
+      const c=d>=0?'#4ade80':'#f87171';
+      diff=`<div style="font-size:11px;color:${c};margin-top:5px">${d>=0?'▲':'▼'} ${k.isPct?Math.abs(d)+'%p':(Math.abs(Math.round(d)).toLocaleString()+(r?' ('+r+'%)':''))} 전월비</div>`;
     }
-    return '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 24px;border-top:3px solid '+k.c+'">'+
-      '<div style="font-size:12px;color:var(--sub);margin-bottom:6px">'+k.lb+' ('+k.sub+')</div>'+
-      '<div style="font-size:22px;font-weight:700;color:'+k.c+';">'+(k.val!==null?k.val.toLocaleString()+' 백만':k.rate)+'</div>'+sub2+'</div>';
+    return `<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 24px;border-top:3px solid ${k.c}">
+      <div style="font-size:12px;color:var(--sub);margin-bottom:6px">${k.lb} (${months[last]})</div>
+      <div style="font-size:22px;font-weight:700;color:${k.c}">${k.isPct?k.v+'%':k.v.toLocaleString()+' 백만'}</div>${diff}</div>`;
   }).join('');
-  document.getElementById('plKpi').innerHTML=kpiHtml;
 
-  // 월 선택 드롭다운
-  var sel=document.getElementById('plSel');
-  sel.innerHTML=months.map(function(m,i){ return '<option value="'+i+'"'+(i===last?' selected':'')+'>'+m+'</option>'; }).join('');
-
-  // 추이 차트
-  mk('cPL','line',{labels:labels,datasets:[
+  mk('cPL','line',{labels,datasets:[
     {label:'매출액',data:rev,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.08)',fill:true,tension:.3,pointRadius:3},
     {label:'영업이익',data:op,borderColor:'#4ade80',fill:false,tension:.3,pointRadius:3,
-     pointBackgroundColor:op.map(function(v){return v>=0?'#4ade80':'#f87171';}),
-     segment:{borderColor:function(ctx){return ctx.p1.parsed.y<0?'#f87171':'#4ade80';}}},
-  ]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},
-    scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:function(v){return v.toLocaleString()+'백만';},font:{size:10}}}}});
+     pointBackgroundColor:op.map(v=>v>=0?'#4ade80':'#f87171'),
+     segment:{borderColor:ctx=>ctx.p1.parsed.y<0?'#f87171':'#4ade80'}},
+  ]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:v=>v.toLocaleString()+'백만',font:{size:10}}}}});
+  mk('cGP','bar',{labels,datasets:[{label:'매출총이익률',data:gpR,backgroundColor:gpR.map(v=>v>=0?'rgba(74,222,128,.7)':'rgba(248,113,113,.7)'),borderRadius:3}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:v=>v+'%',font:{size:10}}}}});
+  mk('cOP','bar',{labels,datasets:[{label:'영업이익률',data:opR,backgroundColor:opR.map(v=>v>=0?'rgba(96,165,250,.7)':'rgba(248,113,113,.7)'),borderRadius:3}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:v=>v+'%',font:{size:10}}}}});
 
-  mk('cGP','bar',{labels:labels,datasets:[{label:'매출총이익률',data:gpR,
-    backgroundColor:gpR.map(function(v){return v>=0?'rgba(74,222,128,.7)':'rgba(248,113,113,.7)';}),borderRadius:3}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:function(v){return v+'%';},font:{size:10}}}}});
-
-  mk('cOP','bar',{labels:labels,datasets:[{label:'영업이익률',data:opR,
-    backgroundColor:opR.map(function(v){return v>=0?'rgba(96,165,250,.7)':'rgba(248,113,113,.7)';}),borderRadius:3}]},
-    {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:function(v){return v+'%';},font:{size:10}}}}});
-
-  // 전체 상세 테이블
-  var tbl=document.getElementById('tPL');
-  var th='background:var(--sf2);color:var(--sub);padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap;font-size:11px;font-weight:600;';
-  var h='<thead><tr><th style="'+th+'text-align:left;min-width:130px">과 목</th>';
-  labels.forEach(function(l){h+='<th style="'+th+'">'+l+'</th>';});
+  // 전체 테이블
+  const tbl=document.getElementById('tPL'),th='background:var(--sf2);color:var(--sub);padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap;font-size:11px;font-weight:600;';
+  let h=`<thead><tr><th style="${th}text-align:left;min-width:130px">과 목</th>`;
+  labels.forEach(l=>{h+=`<th style="${th}">${l}</th>`;});
   h+='</tr></thead><tbody>';
-  Object.entries(items).forEach(function(entry){
-    var key=entry[0], vals=entry[1];
-    var bg=key==='매출총이익'||key==='매출액'?'rgba(99,102,241,.05)':key==='영업이익'?'rgba(74,222,128,.04)':'';
-    var isOp=key==='영업이익';
-    h+='<tr style="background:'+bg+'"><td style="padding:8px 12px;color:var(--tx);font-weight:500">'+key+'</td>';
-    vals.forEach(function(v){h+='<td style="padding:8px 12px;text-align:right;color:'+(isOp?(v>=0?'#4ade80':'#f87171'):'var(--sub)')+';">'+(v<0?'('+Math.abs(v).toLocaleString()+')':v.toLocaleString())+'</td>';});
+  Object.entries(items).forEach(([key,vals])=>{
+    const bg=key==='매출총이익'||key==='매출액'?'rgba(99,102,241,.05)':key==='영업이익'?'rgba(74,222,128,.04)':'';
+    const isOp=key==='영업이익';
+    h+=`<tr style="background:${bg}"><td style="padding:8px 12px;color:var(--tx);font-weight:500">${key}</td>`;
+    vals.forEach(v=>{h+=`<td style="padding:8px 12px;text-align:right;color:${isOp?(v>=0?'#4ade80':'#f87171'):'var(--sub)'}">${v<0?'('+Math.abs(v).toLocaleString()+')':v.toLocaleString()}</td>`;});
     h+='</tr>';
   });
   tbl.innerHTML=h+'</tbody>';
+
+  // 월별 드롭다운 미리 준비
+  const sel=document.getElementById('plSel');
+  sel.innerHTML=months.map((m,i)=>`<option value="${i}" ${i===last?'selected':''}>${m}</option>`).join('');
 }
 
-function buildPlAnalysis(){
-  if(!_PLD) return;
-  var months=_PLD.months, items=_PLD.items;
-  var si=parseInt(document.getElementById('plSel').value);
-  var curM=months[si];
-  var prevMoI=si>0?si-1:null, prevYrI=si>=12?si-12:null;
-  var prevMoM=prevMoI!==null?months[prevMoI]:null;
-  var prevYrM=prevYrI!==null?months[prevYrI]:null;
-  var rev=items['매출액']||[], op=items['영업이익']||[];
+// ══ 월간손익 - 월별 상세 ════════════════════════════════════════════
+function buildPlMonth(){
+  if(!PL||!PL.items)return;
+  const items=PL.items,months=PL.months;
+  const si=parseInt(document.getElementById('plSel').value);
+  const curM=months[si],pMoI=si>0?si-1:null,pYrI=si>=12?si-12:null;
+  const pMoM=pMoI!==null?months[pMoI]:null,pYrM=pYrI!==null?months[pYrI]:null;
+  const rev=items['매출액']||[],op=items['영업이익']||[];
+  const toR=(o,r)=>r?+(o/r*100).toFixed(1):0;
+  const cur_r=rev[si]||0,cur_o=op[si]||0;
+
+  const fD=(cur,prev,isPct)=>{
+    if(prev===null)return'';
+    const d=isPct?+(cur-prev).toFixed(1):cur-prev;
+    if(d===0)return'';
+    const c=d>=0?'#4ade80':'#f87171';
+    const r=!isPct&&prev?+(d/Math.abs(prev)*100).toFixed(1):null;
+    return `<span style="color:${c};font-size:11px"> ${d>=0?'▲':'▼'} ${isPct?Math.abs(d)+'%p':(Math.abs(Math.round(d)).toLocaleString()+(r?' ('+r+'%)':''))}</span>`;
+  };
 
   // KPI 비교 카드
-  function toR(o,r){return r?+(o/r*100).toFixed(1):0;}
-  var cur_r=rev[si]||0, cur_o=op[si]||0;
-  var pmo_r=prevMoI!==null?rev[prevMoI]||0:null;
-  var pyr_r=prevYrI!==null?rev[prevYrI]||0:null;
-  var pmo_o=prevMoI!==null?op[prevMoI]||0:null;
-  var pyr_o=prevYrI!==null?op[prevYrI]||0:null;
-
-  function fDiff(a,b,pct){
-    if(b===null) return '';
-    var d=pct?+(a-b).toFixed(1):a-b;
-    if(d===0) return '';
-    var c=d>0?'#4ade80':'#f87171';
-    var s=pct?((d>0?'+':'')+d+'%p'):(d>0?'▲':'▼')+' '+Math.abs(Math.round(d)).toLocaleString();
-    var r2=!pct&&b?+(d/Math.abs(b)*100).toFixed(1):null;
-    return '<span style="color:'+c+';font-size:11px"> '+s+(r2?' ('+r2+'%)':'')+'</span>';
-  }
-
   document.getElementById('plMonKpi').innerHTML=[
-    {lb:'매출액',cur:cur_r,pmo:pmo_r,pyr:pyr_r,c:'#60a5fa',pct:false},
-    {lb:'영업이익',cur:cur_o,pmo:pmo_o,pyr:pyr_o,c:cur_o>=0?'#4ade80':'#f87171',pct:false},
-    {lb:'영업이익률',cur:toR(cur_o,cur_r),pmo:pmo_o!==null?toR(pmo_o,pmo_r):null,pyr:pyr_o!==null?toR(pyr_o,pyr_r):null,c:cur_o>=0?'#60a5fa':'#f87171',pct:true},
-  ].map(function(k){
-    var curStr=k.pct?k.cur+'%':k.cur.toLocaleString()+' 백만';
-    var pmoStr=k.pmo!==null?(k.pct?k.pmo+'%':k.pmo.toLocaleString())+fDiff(k.cur,k.pmo,k.pct):'';
-    var pyrStr=k.pyr!==null?(k.pct?k.pyr+'%':k.pyr.toLocaleString())+fDiff(k.cur,k.pyr,k.pct):'';
-    return '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 24px;border-top:3px solid '+k.c+'">'+
-      '<div style="font-size:12px;color:var(--sub);margin-bottom:8px">'+k.lb+'</div>'+
-      '<div style="font-size:22px;font-weight:700;color:'+k.c+';margin-bottom:10px">'+curStr+'</div>'+
-      (pmoStr?'<div style="font-size:12px;margin-bottom:4px">전월 ('+prevMoM+'): <b>'+pmoStr+'</b></div>':'')+
-      (pyrStr?'<div style="font-size:12px">전년동월 ('+prevYrM+'): <b>'+pyrStr+'</b></div>':'')+
-      '</div>';
-  }).join('');
+    {lb:'매출액',cur:cur_r,pmo:pMoI!==null?rev[pMoI]||0:null,pyr:pYrI!==null?rev[pYrI]||0:null,c:'#60a5fa',isPct:false},
+    {lb:'영업이익',cur:cur_o,pmo:pMoI!==null?op[pMoI]||0:null,pyr:pYrI!==null?op[pYrI]||0:null,c:cur_o>=0?'#4ade80':'#f87171',isPct:false},
+    {lb:'영업이익률',cur:toR(cur_o,cur_r),pmo:pMoI!==null?toR(op[pMoI]||0,rev[pMoI]||0):null,pyr:pYrI!==null?toR(op[pYrI]||0,rev[pYrI]||0):null,c:cur_o>=0?'#60a5fa':'#f87171',isPct:true},
+  ].map(k=>`<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 24px;border-top:3px solid ${k.c}">
+    <div style="font-size:12px;color:var(--sub);margin-bottom:8px">${k.lb}</div>
+    <div style="font-size:22px;font-weight:700;color:${k.c};margin-bottom:8px">${k.isPct?k.cur+'%':k.cur.toLocaleString()+' 백만'}</div>
+    ${k.pmo!==null?`<div style="font-size:12px;margin-bottom:3px">전월 (${pMoM}): <b>${k.isPct?k.pmo+'%':k.pmo.toLocaleString()}</b>${fD(k.cur,k.pmo,k.isPct)}</div>`:''}
+    ${k.pyr!==null?`<div style="font-size:12px">전년동월 (${pYrM}): <b>${k.isPct?k.pyr+'%':k.pyr.toLocaleString()}</b>${fD(k.cur,k.pyr,k.isPct)}</div>`:''}
+  </div>`).join('');
 
   // 비교 테이블
-  function f(v){return v<0?'<span class="neg">('+Math.abs(v).toLocaleString()+')</span>':'<span>'+v.toLocaleString()+'</span>';}
-  function fd(a,b){if(b===null)return'-';var d=a-b;if(d===0)return'─';var r=b?+(d/Math.abs(b)*100).toFixed(1):null;var cl=d>0?'pos':'neg';return'<span class="'+cl+'">'+(d>0?'▲':'▼')+' '+Math.abs(d).toLocaleString()+(r?' ('+r+'%)':'')+'</span>';}
-  var thS='padding:10px 14px;text-align:right;background:var(--sf2);color:var(--sub);font-size:11px;font-weight:600;border-bottom:1px solid var(--bd);white-space:nowrap;';
-  var tdS='padding:9px 14px;text-align:right;border-bottom:1px solid rgba(46,51,80,.4);font-size:13px;white-space:nowrap;';
-  var tdL='padding:9px 14px;text-align:left;border-bottom:1px solid rgba(46,51,80,.4);font-size:13px;color:var(--tx);font-weight:500;white-space:nowrap;';
-  var h2='<table style="width:100%;border-collapse:collapse"><thead><tr>'+
-    '<th style="'+thS+'text-align:left;min-width:150px">항 목</th>'+
-    '<th style="'+thS+'">'+curM+' 당월</th>';
-  if(prevMoM) h2+='<th style="'+thS+'">'+prevMoM+' 전월</th><th style="'+thS+'color:#fbbf24">전월 대비</th>';
-  if(prevYrM) h2+='<th style="'+thS+'">'+prevYrM+' 전년동월</th><th style="'+thS+'color:#a78bfa">전년 대비</th>';
-  h2+='</tr></thead><tbody>';
-  var BOLDS=['매출액','매출총이익','영업이익'];
-  var revA=items['매출액']||[], opA=items['영업이익']||[];
-  Object.keys(items).forEach(function(key){
-    var vals=items[key], cur=vals[si]||0;
-    var pMo=prevMoI!==null?vals[prevMoI]||0:null;
-    var pYr=prevYrI!==null?vals[prevYrI]||0:null;
-    var isBold=BOLDS.indexOf(key)>-1, isOp=key==='영업이익';
-    var bg=isOp?'rgba(74,222,128,.04)':isBold?'rgba(99,102,241,.05)':'';
-    h2+='<tr style="background:'+bg+'">'+
-      '<td style="'+tdL+(isBold?'font-weight:700':'')+'">' +key+'</td>'+
-      '<td style="'+tdS+'color:'+(cur<0?'var(--rd)':'var(--tx)')+(isBold?';font-weight:700':'')+'">'+ f(cur)+'</td>';
-    if(prevMoM!==null) h2+='<td style="'+tdS+'color:var(--sub)">'+f(pMo)+'</td><td style="'+tdS+'">'+fd(cur,pMo)+'</td>';
-    if(prevYrM!==null) h2+='<td style="'+tdS+'color:var(--sub)">'+f(pYr)+'</td><td style="'+tdS+'">'+fd(cur,pYr)+'</td>';
-    h2+='</tr>';
+  const f=v=>v<0?`<span class="neg">(${Math.abs(v).toLocaleString()})</span>`:v.toLocaleString();
+  const fd=(a,b)=>{if(b===null)return'-';const d=a-b;if(d===0)return'─';const r=b?+(d/Math.abs(b)*100).toFixed(1):null;const c=d>0?'pos':'neg';return`<span class="${c}">${d>0?'▲':'▼'} ${Math.abs(d).toLocaleString()}${r?' ('+r+'%)':''}</span>`;};
+  const thS='padding:10px 14px;text-align:right;background:var(--sf2);color:var(--sub);font-size:11px;font-weight:600;border-bottom:1px solid var(--bd);white-space:nowrap;';
+  const tdS='padding:9px 14px;text-align:right;border-bottom:1px solid rgba(46,51,80,.4);font-size:13px;white-space:nowrap;';
+  const tdL='padding:9px 14px;text-align:left;border-bottom:1px solid rgba(46,51,80,.4);font-size:13px;color:var(--tx);font-weight:500;white-space:nowrap;';
+  let h=`<table style="width:100%;border-collapse:collapse"><thead><tr>
+    <th style="${thS}text-align:left;min-width:150px">항 목</th>
+    <th style="${thS}">${curM}<br><span style="font-weight:400">당월</span></th>`;
+  if(pMoM)h+=`<th style="${thS}">${pMoM}<br><span style="font-weight:400">전월</span></th><th style="${thS}color:#fbbf24">전월 대비</th>`;
+  if(pYrM)h+=`<th style="${thS}">${pYrM}<br><span style="font-weight:400">전년동월</span></th><th style="${thS}color:#a78bfa">전년 대비</th>`;
+  h+=`</tr></thead><tbody>`;
+  const BOLDS=['매출액','매출총이익','영업이익'];
+  Object.keys(items).forEach(key=>{
+    const vals=items[key],cur=vals[si]||0;
+    const pMo=pMoI!==null?vals[pMoI]||0:null,pYr=pYrI!==null?vals[pYrI]||0:null;
+    const isBold=BOLDS.includes(key),isOp=key==='영업이익';
+    const bg=isOp?'rgba(74,222,128,.04)':isBold?'rgba(99,102,241,.05)':'';
+    h+=`<tr style="background:${bg}">
+      <td style="${tdL}${isBold?'font-weight:700':''}">${key}</td>
+      <td style="${tdS}color:${cur<0?'var(--rd)':'var(--tx)'}${isBold?';font-weight:700':''}">${f(cur)}</td>`;
+    if(pMoM!==null)h+=`<td style="${tdS}color:var(--sub)">${f(pMo)}</td><td style="${tdS}">${fd(cur,pMo)}</td>`;
+    if(pYrM!==null)h+=`<td style="${tdS}color:var(--sub)">${f(pYr)}</td><td style="${tdS}">${fd(cur,pYr)}</td>`;
+    h+='</tr>';
   });
-  // 영업이익률 행
-  if(revA.length&&opA.length){
-    function toRa(o,r){return r?+(o/r*100).toFixed(1):null;}
-    var crR=toRa(opA[si],revA[si]);
-    var pmR=prevMoI!==null?toRa(opA[prevMoI],revA[prevMoI]):null;
-    var pyR=prevYrI!==null?toRa(opA[prevYrI],revA[prevYrI]):null;
-    function fRa(v,p){if(p===null||v===null)return'-';var d=+(v-p).toFixed(1);if(d===0)return'─';return'<span class="'+(d>0?'pos':'neg')+'">'+(d>0?'▲':'▼')+' '+Math.abs(d)+'%p</span>';}
-    h2+='<tr style="background:rgba(99,102,241,.05)"><td style="'+tdL+'color:var(--sub)"> 영업이익률</td>'+
-      '<td style="'+tdS+'color:'+(crR>=0?'var(--gr)':'var(--rd)')+';font-weight:700">'+(crR!==null?crR+'%':'-')+'</td>';
-    if(prevMoM!==null) h2+='<td style="'+tdS+'color:'+(pmR>=0?'var(--gr)':'var(--rd)')+';">'+(pmR!==null?pmR+'%':'-')+'</td><td style="'+tdS+'">'+fRa(crR,pmR)+'</td>';
-    if(prevYrM!==null) h2+='<td style="'+tdS+'color:'+(pyR>=0?'var(--gr)':'var(--rd)')+';">'+(pyR!==null?pyR+'%':'-')+'</td><td style="'+tdS+'">'+fRa(crR,pyR)+'</td>';
-    h2+='</tr>';
+  // 영업이익률
+  if(rev.length&&op.length){
+    const crR=rev[si]?+(op[si]/rev[si]*100).toFixed(1):null;
+    const pmR=pMoI!==null&&rev[pMoI]?+(op[pMoI]/rev[pMoI]*100).toFixed(1):null;
+    const pyR=pYrI!==null&&rev[pYrI]?+(op[pYrI]/rev[pYrI]*100).toFixed(1):null;
+    const fRa=(v,p)=>{if(p===null||v===null)return'-';const d=+(v-p).toFixed(1);if(d===0)return'─';return`<span class="${d>0?'pos':'neg'}">${d>0?'▲':'▼'} ${Math.abs(d)}%p</span>`;};
+    h+=`<tr style="background:rgba(99,102,241,.05)"><td style="${tdL}color:var(--sub)"> 영업이익률</td>
+      <td style="${tdS}color:${crR>=0?'var(--gr)':'var(--rd)'};font-weight:700">${crR!==null?crR+'%':'-'}</td>`;
+    if(pMoM!==null)h+=`<td style="${tdS}color:${pmR>=0?'var(--gr)':'var(--rd)'}">${pmR!==null?pmR+'%':'-'}</td><td style="${tdS}">${fRa(crR,pmR)}</td>`;
+    if(pYrM!==null)h+=`<td style="${tdS}color:${pyR>=0?'var(--gr)':'var(--rd)'}">${pyR!==null?pyR+'%':'-'}</td><td style="${tdS}">${fRa(crR,pyR)}</td>`;
+    h+='</tr>';
   }
-  document.getElementById('plAna').innerHTML=h2+'</tbody></table>';
+  document.getElementById('plMonTbl').innerHTML=h+'</tbody></table>';
 
-  // 비교 막대 차트
-  if(document.getElementById('plBT1')) document.getElementById('plBT1').textContent='매출액 비교 ('+curM+')';
-  if(document.getElementById('plBT2')) document.getElementById('plBT2').textContent='영업이익 비교 ('+curM+')';
-  var labs=[], rD=[], oD=[], bR=[], bO=[];
-  if(prevYrM){labs.push(prevYrM+' 전년동월');rD.push(rev[prevYrI]);oD.push(op[prevYrI]);bR.push('rgba(167,139,250,.5)');bO.push(op[prevYrI]>=0?'rgba(167,139,250,.5)':'rgba(248,113,113,.4)');}
-  if(prevMoM){labs.push(prevMoM+' 전월');rD.push(rev[prevMoI]);oD.push(op[prevMoI]);bR.push('rgba(96,165,250,.5)');bO.push(op[prevMoI]>=0?'rgba(96,165,250,.5)':'rgba(248,113,113,.4)');}
-  labs.push(curM+' 당월');rD.push(rev[si]);oD.push(op[si]);bR.push('rgba(74,222,128,.8)');bO.push(op[si]>=0?'rgba(74,222,128,.8)':'rgba(248,113,113,.8)');
-  mk('cPlC1','bar',{labels:labs,datasets:[{label:'매출액',data:rD,backgroundColor:bR,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:function(v){return v.toLocaleString()+'백만';},font:{size:11}}}}});
-  mk('cPlC2','bar',{labels:labs,datasets:[{label:'영업이익',data:oD,backgroundColor:bO,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:function(v){return v.toLocaleString()+'백만';},font:{size:11}}}}});
+  // 비교 막대차트
+  if(document.getElementById('plCT1'))document.getElementById('plCT1').textContent=`매출액 비교 (${curM})`;
+  if(document.getElementById('plCT2'))document.getElementById('plCT2').textContent=`영업이익 비교 (${curM})`;
+  const labs=[],rD=[],oD=[],bR=[],bO=[];
+  if(pYrM){labs.push(pYrM);rD.push(rev[pYrI]||0);oD.push(op[pYrI]||0);bR.push('rgba(167,139,250,.5)');bO.push((op[pYrI]||0)>=0?'rgba(167,139,250,.5)':'rgba(248,113,113,.4)');}
+  if(pMoM){labs.push(pMoM);rD.push(rev[pMoI]||0);oD.push(op[pMoI]||0);bR.push('rgba(96,165,250,.5)');bO.push((op[pMoI]||0)>=0?'rgba(96,165,250,.5)':'rgba(248,113,113,.4)');}
+  labs.push(curM+' ★');rD.push(rev[si]||0);oD.push(op[si]||0);bR.push('rgba(74,222,128,.85)');bO.push((op[si]||0)>=0?'rgba(74,222,128,.85)':'rgba(248,113,113,.85)');
+  mk('cPC1','bar',{labels:labs,datasets:[{data:rD,backgroundColor:bR,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:v=>v.toLocaleString()+'백만',font:{size:11}}}}});
+  mk('cPC2','bar',{labels:labs,datasets:[{data:oD,backgroundColor:bO,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:v=>v.toLocaleString()+'백만',font:{size:11}}}}});
 }
-
 
 init();
 </script>
