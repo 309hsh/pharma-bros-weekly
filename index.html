@@ -255,6 +255,17 @@ td.item-label { padding-left:40px; }
 
   <div id="tab-pl" class="tab-panel">
     <div id="plKpiGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px"></div>
+    <div class="table-card" style="margin-bottom:24px">
+      <div class="table-header" style="flex-wrap:wrap;gap:12px">
+        <span style="font-size:14px;font-weight:600">📊 기간별 손익 비교 분석</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:12px;color:var(--sub)">기준 월:</label>
+          <select id="plMonthSel" onchange="buildPlAnalysis()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 10px;border-radius:6px;outline:none;cursor:pointer"></select>
+          <span style="font-size:11px;color:var(--sub)">전월 · 전년 동월과 자동 비교</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto" id="plAnalysisTable"></div>
+    </div>
     <div class="chart-card" style="margin-bottom:24px">
       <div class="chart-title">월별 매출액 / 영업이익 추이 <span class="chart-sub">단위: 백만원</span></div>
       <div style="position:relative;height:300px"><canvas id="plLineChart"></canvas></div>
@@ -263,7 +274,10 @@ td.item-label { padding-left:40px; }
       <div class="chart-card"><div class="chart-title">매출총이익률 추이 <span class="chart-sub">%</span></div><div style="position:relative;height:220px"><canvas id="gpRateChart"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">영업이익률 추이 <span class="chart-sub">%</span></div><div style="position:relative;height:220px"><canvas id="opRateChart"></canvas></div></div>
     </div>
-    <div style="overflow-x:auto;margin-bottom:24px"><table id="plTable" style="width:100%;border-collapse:collapse;font-size:12px"></table></div>
+    <div class="table-card">
+      <div class="table-header"><span style="font-size:14px;font-weight:600">전체 월별 손익 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div>
+      <div style="overflow-x:auto"><table id="plTable" style="width:100%;border-collapse:collapse;font-size:12px"></table></div>
+    </div>
   </div>
 </div>
 
@@ -412,26 +426,43 @@ function renderAll(){
   buildBarChart(); buildNetChart(); buildIncomeDonut(); buildExpenseDonut(); buildStackedBar();
   buildWeeklyTable(); buildMonthBar(); buildMonthIncBar(); buildMonthlyTable(); buildIssueCards();
 }
-// ── 월간 손익 ───────────────────────────────────────────────────────────
+// ── 월간 손익 ─────────────────────────────────────────────────────────────
+var _plData = null;
+
 function buildPlTab() {
   const pl = (window.__INJECTED_DATA__ || {}).pl;
-  if (!pl) { document.getElementById('plKpiGrid').innerHTML='<p style="color:var(--sub);padding:20px">손익 데이터가 없습니다</p>'; return; }
+  if (!pl || !pl.items) {
+    document.getElementById('plKpiGrid').innerHTML='<p style="color:var(--sub);padding:20px">손익 데이터 없음</p>';
+    return;
+  }
+  _plData = pl;
   const {months, labels, items} = pl;
   const n = months.length, last = n - 1;
-  const rev = items['매출액'] || [], op = items['영업이익'] || [], gp = items['매출총이익'] || [];
-  const gpRate = gp.map((v,i) => rev[i] ? +(v/rev[i]*100).toFixed(1) : 0);
-  const opRate = op.map((v,i) => rev[i] ? +(v/rev[i]*100).toFixed(1) : 0);
-
+  const rev  = items['매출액']     || Array(n).fill(0);
+  const op   = items['영업이익']   || Array(n).fill(0);
+  const gp   = items['매출총이익'] || Array(n).fill(0);
+  const gpRate = gp.map((v,i)  => rev[i] ? +(v/rev[i]*100).toFixed(1) : 0);
+  const opRate = op.map((v,i)  => rev[i] ? +(v/rev[i]*100).toFixed(1) : 0);
   const gc2 = 'rgba(46,51,80,0.8)';
+
+  // KPI 카드
   document.getElementById('plKpiGrid').innerHTML = [
     {lb:'최근월 매출', val:rev[last], color:'#60a5fa', sub:months[last]},
     {lb:'최근월 영업이익', val:op[last], color:op[last]>=0?'#4ade80':'#f87171', sub:months[last]},
     {lb:'최근월 영업이익률', val:null, rate:opRate[last]+'%', color:op[last]>=0?'#60a5fa':'#f87171', sub:months[last]},
-  ].map(k => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;border-top:3px solid ${k.color}">
+  ].map(k=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;border-top:3px solid ${k.color}">
     <div style="font-size:12px;color:var(--sub);margin-bottom:6px">${k.lb} (${k.sub})</div>
     <div style="font-size:22px;font-weight:700;color:${k.color}">${k.val!==null?k.val.toLocaleString()+' 백만':k.rate}</div>
   </div>`).join('');
 
+  // 월 선택 드롭다운
+  const sel = document.getElementById('plMonthSel');
+  if (sel) {
+    sel.innerHTML = months.map((m,i) => `<option value="${i}" ${i===last?'selected':''}>${m}</option>`).join('');
+    buildPlAnalysis();
+  }
+
+  // 추이 차트
   if (charts['plLine']) charts['plLine'].destroy();
   charts['plLine'] = new Chart(document.getElementById('plLineChart'), {
     type: 'line',
@@ -441,7 +472,7 @@ function buildPlTab() {
        pointBackgroundColor:op.map(v=>v>=0?'#4ade80':'#f87171'),
        segment:{borderColor:ctx=>ctx.p1.parsed.y<0?'#f87171':'#4ade80'}},
     ]},
-    options: {responsive:true, maintainAspectRatio:false,
+    options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},
       scales:{x:{grid:{color:gc2},ticks:{font:{size:10}}},y:{grid:{color:gc2},ticks:{callback:v=>v.toLocaleString()+'백만',font:{size:10}}}}}
   });
@@ -462,83 +493,119 @@ function buildPlTab() {
       scales:{x:{grid:{color:gc2},ticks:{font:{size:10}}},y:{grid:{color:gc2},ticks:{callback:v=>v+'%',font:{size:10}}}}}
   });
 
+  buildPlDetailTable(months, labels, items, opRate);
+}
+
+function buildPlAnalysis() {
+  if (!_plData) return;
+  const {months, items} = _plData;
+  const selEl = document.getElementById('plMonthSel');
+  if (!selEl) return;
+  const selIdx = parseInt(selEl.value);
+  const curM   = months[selIdx];
+  const prevMoIdx = selIdx > 0 ? selIdx - 1 : null;
+  const prevYrIdx = selIdx >= 12 ? selIdx - 12 : null;
+  const prevMoM   = prevMoIdx !== null ? months[prevMoIdx] : null;
+  const prevYrM   = prevYrIdx !== null ? months[prevYrIdx] : null;
+
+  const f  = v => v < 0 ? '<span class="neg">('+Math.abs(v).toLocaleString()+')</span>'
+                        : '<span>'+v.toLocaleString()+'</span>';
+  const fd = (a, b) => {
+    if (b === null) return '-';
+    const d = a - b;
+    if (d === 0) return '<span>─</span>';
+    const r = b !== 0 ? (d/Math.abs(b)*100).toFixed(1) : null;
+    const cls = d > 0 ? 'pos' : 'neg';
+    const arw = d > 0 ? '▲' : '▼';
+    const rStr = r !== null ? ` (${d>0?'+':''}${r}%)` : '';
+    return `<span class="${cls}">${arw} ${Math.abs(d).toLocaleString()}${rStr}</span>`;
+  };
+
+  const thS = 'padding:10px 14px;text-align:right;background:var(--surface2);color:var(--sub);font-size:11px;font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;';
+  const tdS = 'padding:9px 14px;text-align:right;border-bottom:1px solid rgba(46,51,80,.4);font-size:13px;white-space:nowrap;';
+  const tdL = 'padding:9px 14px;text-align:left;border-bottom:1px solid rgba(46,51,80,.4);font-size:13px;color:var(--text);font-weight:500;white-space:nowrap;';
+
+  let h = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="${thS}text-align:left;min-width:150px">항 목</th>
+      <th style="${thS}">${curM}<br><span style="font-weight:400;opacity:.8">당월</span></th>`;
+  if (prevMoM) h += `<th style="${thS}">${prevMoM}<br><span style="font-weight:400;opacity:.8">전월</span></th>
+      <th style="${thS}color:#fbbf24">전월 대비</th>`;
+  if (prevYrM) h += `<th style="${thS}">${prevYrM}<br><span style="font-weight:400;opacity:.8">전년 동월</span></th>
+      <th style="${thS}color:#a78bfa">전년 동월 대비</th>`;
+  h += `</tr></thead><tbody>`;
+
+  const revArr = items['매출액'] || [];
+  const opArr  = items['영업이익'] || [];
+  const BOLDS  = ['매출액','매출총이익','영업이익'];
+
+  Object.keys(items).forEach(key => {
+    const vals = items[key];
+    const cur  = vals[selIdx] || 0;
+    const pMo  = prevMoIdx !== null ? (vals[prevMoIdx] || 0) : null;
+    const pYr  = prevYrIdx !== null ? (vals[prevYrIdx] || 0) : null;
+    const isBold = BOLDS.indexOf(key) > -1;
+    const isOp   = key === '영업이익';
+    const rowBg  = isOp ? 'rgba(74,222,128,.04)' : isBold ? 'rgba(99,102,241,.05)' : '';
+
+    h += `<tr style="background:${rowBg}">
+      <td style="${tdL}${isBold?'font-weight:700':''}">${key}</td>
+      <td style="${tdS}color:${cur<0?'var(--red)':'var(--text)'}${isBold?';font-weight:700':''}">${f(cur)}</td>`;
+    if (prevMoM !== null) h += `<td style="${tdS}color:var(--sub)">${f(pMo)}</td><td style="${tdS}">${fd(cur, pMo)}</td>`;
+    if (prevYrM !== null) h += `<td style="${tdS}color:var(--sub)">${f(pYr)}</td><td style="${tdS}">${fd(cur, pYr)}</td>`;
+    h += '</tr>';
+  });
+
+  // 영업이익률 행
+  if (revArr.length && opArr.length) {
+    const toRate = (opV, revV) => revV ? (opV/revV*100).toFixed(1) : null;
+    const cur  = toRate(opArr[selIdx], revArr[selIdx]);
+    const pMo  = prevMoIdx !== null ? toRate(opArr[prevMoIdx], revArr[prevMoIdx]) : null;
+    const pYr  = prevYrIdx !== null ? toRate(opArr[prevYrIdx], revArr[prevYrIdx]) : null;
+    const fR   = (v, p) => {
+      if (p === null || v === null) return '-';
+      const d = parseFloat(v) - parseFloat(p);
+      if (d === 0) return '<span>─</span>';
+      const cls = d > 0 ? 'pos' : 'neg';
+      return `<span class="${cls}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)}%p</span>`;
+    };
+    const rCls = v => v !== null && parseFloat(v) >= 0 ? 'var(--green)' : 'var(--red)';
+
+    h += `<tr style="background:rgba(99,102,241,.05)">
+      <td style="${tdL}color:var(--sub)"> 영업이익률</td>
+      <td style="${tdS}color:${rCls(cur)};font-weight:700">${cur !== null ? cur+'%' : '-'}</td>`;
+    if (prevMoM !== null) h += `<td style="${tdS}color:${rCls(pMo)}">${pMo !== null ? pMo+'%' : '-'}</td><td style="${tdS}">${fR(cur,pMo)}</td>`;
+    if (prevYrM !== null) h += `<td style="${tdS}color:${rCls(pYr)}">${pYr !== null ? pYr+'%' : '-'}</td><td style="${tdS}">${fR(cur,pYr)}</td>`;
+    h += '</tr>';
+  }
+
+  h += '</tbody></table>';
+  document.getElementById('plAnalysisTable').innerHTML = h;
+}
+
+function buildPlDetailTable(months, labels, items, opRate) {
   const tbl = document.getElementById('plTable');
-  const thStyle = 'background:var(--surface2);color:var(--sub);padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px;font-weight:600;';
-  const tdStyle = 'padding:8px 12px;text-align:right;border-bottom:1px solid rgba(46,51,80,.4);white-space:nowrap;font-size:12px;color:var(--sub);';
-  let h = `<thead><tr><th style="${thStyle}text-align:left;min-width:120px">과 목</th>`;
-  labels.forEach(l => { h += `<th style="${thStyle}">${l}</th>`; });
+  if (!tbl) return;
+  const thS = 'background:var(--surface2);color:var(--sub);padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px;font-weight:600;';
+  let h = `<thead><tr><th style="${thS}text-align:left;min-width:130px">과 목</th>`;
+  labels.forEach(l => { h += `<th style="${thS}">${l}</th>`; });
   h += '</tr></thead><tbody>';
-  const rowBg = {'매출액':'rgba(99,102,241,.05)','매출총이익':'rgba(99,102,241,.05)'};
   Object.entries(items).forEach(([key, vals]) => {
-    const bg = rowBg[key] || (key==='영업이익'?'rgba(74,222,128,.04)':'');
+    const bg = key==='매출총이익'||key==='매출액' ? 'rgba(99,102,241,.05)' : key==='영업이익' ? 'rgba(74,222,128,.04)' : '';
     const isOp = key === '영업이익';
-    h += `<tr style="background:${bg}"><td style="${tdStyle}text-align:left;color:var(--text);font-weight:500">${key}</td>`;
+    const tdS2 = 'padding:8px 12px;text-align:right;border-bottom:1px solid rgba(46,51,80,.4);white-space:nowrap;font-size:12px;';
+    h += `<tr style="background:${bg}"><td style="${tdS2}text-align:left;color:var(--text);font-weight:500">${key}</td>`;
     vals.forEach(v => {
-      const c = isOp ? (v>=0?'#4ade80':'#f87171') : 'var(--sub)';
-      h += `<td style="${tdStyle}color:${c}">${v<0?'('+Math.abs(v).toLocaleString()+')':v.toLocaleString()}</td>`;
+      h += `<td style="${tdS2}color:${isOp?(v>=0?'#4ade80':'#f87171'):'var(--sub)'}">${v<0?'('+Math.abs(v).toLocaleString()+')':v.toLocaleString()}</td>`;
     });
     h += '</tr>';
   });
-  h += `<tr><td style="${tdStyle}text-align:left;color:var(--sub)"> 영업이익률</td>`;
-  opRate.forEach(v => { h += `<td style="${tdStyle}color:${v>=0?'#4ade80':'#f87171'}">${v}%</td>`; });
+  h += `<tr><td style="padding:8px 12px;text-align:left;color:var(--sub);font-size:12px;border-bottom:1px solid rgba(46,51,80,.4)"> 영업이익률</td>`;
+  opRate.forEach(v => { h += `<td style="padding:8px 12px;text-align:right;font-size:12px;border-bottom:1px solid rgba(46,51,80,.4);color:${v>=0?'#4ade80':'#f87171'}">${v}%</td>`; });
   h += '</tr></tbody>';
   tbl.innerHTML = h;
-
-  // ── 월간 비교표 (매출 / 영업이익 전월 대비) ──────────────────────────
-  buildMonthComparison(months, labels, rev, op, gpRate, opRate);
 }
 
-function buildMonthComparison(months, labels, rev, op, gpRate, opRate) {
-  const wrap = document.getElementById('plMonthComp');
-  if (!wrap) return;
-
-  const fmt2 = n => n < 0 ? '(' + Math.abs(n).toLocaleString() + ')' : n.toLocaleString();
-  const fmtPct = (n, prev) => {
-    if (!prev) return '-';
-    const r = ((n - prev) / Math.abs(prev) * 100).toFixed(1);
-    return (r >= 0 ? '+' : '') + r + '%';
-  };
-  const arw = (a, b) => a > b ? '▲' : a < b ? '▼' : '─';
-  const arwCls = (a, b) => a > b ? 'pos' : a < b ? 'neg' : '';
-
-  let h = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-    <thead>
-      <tr style="background:var(--surface2)">
-        <th style="padding:10px 14px;text-align:left;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border);min-width:90px">월</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">매출액</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">전월대비</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">증감율</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">영업이익</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">전월대비</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">증감율</th>
-        <th style="padding:10px 14px;text-align:right;color:var(--sub);font-size:11px;border-bottom:1px solid var(--border)">영업이익률</th>
-      </tr>
-    </thead><tbody>`;
-
-  rev.forEach((r, i) => {
-    const o = op[i];
-    const prevR = i > 0 ? rev[i-1] : null;
-    const prevO = i > 0 ? op[i-1] : null;
-    const dR = prevR !== null ? r - prevR : null;
-    const dO = prevO !== null ? o - prevO : null;
-    const isLast = i === rev.length - 1;
-    const rowBg = isLast ? 'background:rgba(99,102,241,.08)' : (i % 2 === 0 ? '' : 'background:rgba(255,255,255,.02)');
-
-    h += `<tr style="${rowBg};border-bottom:1px solid rgba(46,51,80,.4)">
-      <td style="padding:9px 14px;color:${isLast?'var(--text)':'var(--sub)'};font-weight:${isLast?700:400}">${months[i]}</td>
-      <td style="padding:9px 14px;text-align:right;color:var(--text)">${r.toLocaleString()}</td>
-      <td style="padding:9px 14px;text-align:right" class="${dR !== null ? arwCls(r, prevR) : ''}">${dR !== null ? arw(r,prevR)+' '+fmt2(dR) : '-'}</td>
-      <td style="padding:9px 14px;text-align:right" class="${dR !== null ? arwCls(r, prevR) : ''}">${fmtPct(r, prevR)}</td>
-      <td style="padding:9px 14px;text-align:right" class="${o>=0?'pos':'neg'}">${fmt2(o)}</td>
-      <td style="padding:9px 14px;text-align:right" class="${dO !== null ? arwCls(o, prevO) : ''}">${dO !== null ? arw(o,prevO)+' '+fmt2(dO) : '-'}</td>
-      <td style="padding:9px 14px;text-align:right" class="${dO !== null ? arwCls(o, prevO) : ''}">${fmtPct(o, prevO)}</td>
-      <td style="padding:9px 14px;text-align:right" class="${opRate[i]>=0?'pos':'neg'}">${opRate[i]}%</td>
-    </tr>`;
-  });
-
-  h += '</tbody></table>';
-  wrap.innerHTML = h;
-}
 
 const _origST = showTab;
 window.showTab = function(name, btn) {
