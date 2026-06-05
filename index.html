@@ -220,6 +220,33 @@ Chart.defaults.font.family="'Noto Sans KR',sans-serif";
 const F=n=>(!n&&n!==0)?'-':Math.round(n).toLocaleString('ko-KR');
 const FN=n=>(!n&&n!==0)?'-':(n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
 
+// ── 달력 기반 월별 집계 (일수 비례 계산) ──────────────────
+var WF=[],M1N=4,M2N=5;
+function initWF(){
+  var MD=[0,31,28,31,30,31,30,31,31,30,31,30,31];
+  WF=(WD.length?WD:WEEKS.map(function(){return '';})).map(function(dr){
+    if(!dr||dr.indexOf('~')<0)return {};
+    var p=dr.split('~'),s0=p[0].split('/'),s1=p[1].split('/');
+    var sm=+s0[0],sd=+s0[1],em=+s1[0],ed=+s1[1];
+    if(!sm||!sd||!em||!ed)return {};
+    var fracs={},total=0,m=sm,d=sd;
+    for(var it=0;it<14;it++){
+      fracs[m]=(fracs[m]||0)+1;total++;
+      if(m===em&&d===ed)break;
+      d++;if(d>MD[m]){m++;if(m>12)m=1;d=1;}
+    }
+    if(total>0)Object.keys(fracs).forEach(function(k){fracs[k]/=total;});
+    return fracs;
+  });
+}
+function mSum(vals,mn){
+  if(!WF.length)return 0;
+  return Math.round(vals.reduce(function(s,v,i){return s+v*(WF[i]&&WF[i][mn]||0);},0));
+}
+function mSumAll(data,mn){
+  return Object.values(data).reduce(function(s,v){return s+mSum(v,mn);},0);
+}
+
 function showTab(name,btn){
   document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
@@ -245,8 +272,15 @@ function init(){
   tI=WEEKS.map((_,i)=>Object.values(INCOME).reduce((s,v)=>s+(v[i]||0),0));
   tE=WEEKS.map((_,i)=>Object.values(EXPENSE).reduce((s,v)=>s+(v[i]||0),0));
   net=WEEKS.map((_,i)=>tI[i]-tE[i]);
-  const sm=(a,ix)=>ix.reduce((s,i)=>s+(a[i]||0),0);
-  ai=sm(tI,APR);ae=sm(tE,APR);mi=sm(tI,MAY);me=sm(tE,MAY);
+  initWF();
+  M1N=parseInt(mn[0])||4;M2N=parseInt(mn[1])||5;
+  if(WF.length&&WF.some(function(f){return Object.keys(f).length>0;})){
+    ai=mSumAll(INCOME,M1N);ae=mSumAll(EXPENSE,M1N);
+    mi=mSumAll(INCOME,M2N);me=mSumAll(EXPENSE,M2N);
+  } else {
+    const sm2=(a,ix)=>ix.reduce((s,i)=>s+(a[i]||0),0);
+    ai=sm2(tI,APR);ae=sm2(tE,APR);mi=sm2(tI,MAY);me=sm2(tE,MAY);
+  }
   renderKpi();buildCharts();buildWeeklyTable();buildMonthlyTable();buildIssues();
   const now=new Date();
   document.getElementById('lastUpdated').textContent=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+' 기준';
@@ -295,7 +329,7 @@ function buildCharts(){
   const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
   mk('cMB','bar',{labels:[m1,m2],datasets:[{label:'입금',data:[ai,mi],backgroundColor:'rgba(74,222,128,.7)',borderColor:'#4ade80',borderWidth:1,borderRadius:6},{label:'출금',data:[ae,me],backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:6},{label:'순현금',data:[ai-ae,mi-me],backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
   const k5=Object.keys(INCOME).slice(0,5);
-  mk('cMI','bar',{labels:k5,datasets:[{label:m1,data:k5.map(x=>APR.reduce((s,i)=>s+(INCOME[x][i]||0),0)),backgroundColor:'rgba(74,222,128,.5)',borderColor:'#4ade80',borderWidth:1,borderRadius:4},{label:m2,data:k5.map(x=>MAY.reduce((s,i)=>s+(INCOME[x][i]||0),0)),backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
+  mk('cMI','bar',{labels:k5,datasets:[{label:m1,data:k5.map(x=>mSum(INCOME[x],M1N)),backgroundColor:'rgba(74,222,128,.5)',borderColor:'#4ade80',borderWidth:1,borderRadius:4},{label:m2,data:k5.map(x=>mSum(INCOME[x],M2N)),backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
 }
 
 function buildWeeklyTable(){
@@ -320,7 +354,7 @@ function buildMonthlyTable(){
   [[' 입금 합계','it',INCOME,ai,mi],[' 출금 합계','et',EXPENSE,ae,me]].forEach(([lb,cls,data,tA,tM])=>{
     const d=tM-tA,r=tA?(d/tA*100).toFixed(1):null;
     h+=`<tr class="${cls}"><td colspan="2" style="padding-left:24px">▶${lb}</td><td>${F(tA)}</td><td>${F(tM)}</td><td class="${d>=0?'pos':'neg'}">${FN(d)}</td><td class="${d>=0?'pos':'neg'}">${r!==null?(d>=0?'+':'')+r+'%':'-'}</td></tr>`;
-    Object.entries(data).forEach(([k,v])=>{const a=APR.reduce((s,i)=>s+(v[i]||0),0),m=MAY.reduce((s,i)=>s+(v[i]||0),0);row(k,a,m,true);});
+    Object.entries(data).forEach(([k,v])=>{const a=mSum(v,M1N),m=mSum(v,M2N);row(k,a,m,true);});
   });
   const an=ai-ae,mn2=mi-me,dn=mn2-an,rn=an?(dn/Math.abs(an)*100).toFixed(1):null;
   h+=`<tr class="nr"><td colspan="2" style="padding-left:24px">💡 순현금흐름</td><td class="${an>=0?'pos':'neg'}">${FN(an)}</td><td class="${mn2>=0?'pos':'neg'}">${FN(mn2)}</td><td class="${dn>=0?'pos':'neg'}">${FN(dn)}</td><td class="${dn>=0?'pos':'neg'}">${rn!==null?(dn>=0?'+':'')+rn+'%':'-'}</td></tr></tbody>`;
