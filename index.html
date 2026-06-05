@@ -221,7 +221,7 @@ const F=n=>(!n&&n!==0)?'-':Math.round(n).toLocaleString('ko-KR');
 const FN=n=>(!n&&n!==0)?'-':(n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
 
 // ── 달력 기반 월별 집계 (시작일 기준: 4/30 시작 → 4월) ──────
-var CAPR=[],CMAY=[],M1N=4,M2N=5,MCF_M1=0,MCF_M2=1;
+var CAPR=[],CMAY=[],M1N=4,M2N=5,MCF_M1=0,MCF_M2=1,MCF_HAS_M2=false;
 function initCalGroups(){
   // week_dates 시작일 기준으로 월 분류
   // "4/30~5/6" → 시작일 4월 → 4월 그룹
@@ -271,20 +271,21 @@ function init(){
   net=WEEKS.map((_,i)=>tI[i]-tE[i]);
   // monthly_cashflow(백데이터) 우선, 없으면 주간 집계 fallback
   var MCF=D.monthly_cashflow;
-  if(MCF&&MCF.months&&MCF.months.length>=2){
-    // month_groups 기준으로 4월,5월 찾기
+  if(MCF&&MCF.months&&MCF.months.length>=1){
     var mgKeys=Object.keys(MG),want1=parseInt(mgKeys[0])||4,want2=parseInt(mgKeys[1])||5;
     var baseYr=MCF.months[MCF.months.length-1].split('-')[0];
     var tgt1=baseYr+'-'+String(want1).padStart(2,'0');
     var tgt2=baseYr+'-'+String(want2).padStart(2,'0');
-    MCF_M1=MCF.months.indexOf(tgt1);MCF_M2=MCF.months.indexOf(tgt2);
-    if(MCF_M1<0||MCF_M2<0){MCF_M1=MCF.months.length-2;MCF_M2=MCF.months.length-1;}
+    MCF_M1=MCF.months.indexOf(tgt1);
+    MCF_M2=MCF.months.indexOf(tgt2);
+    if(MCF_M1<0) MCF_M1=MCF.months.length-1;
+    MCF_HAS_M2=MCF_M2>=0;
     M1N=parseInt(MCF.months[MCF_M1].split('-')[1])||want1;
-    M2N=parseInt(MCF.months[MCF_M2].split('-')[1])||want2;
+    M2N=MCF_HAS_M2?(parseInt(MCF.months[MCF_M2].split('-')[1])||want2):0;
     ai=Object.values(MCF.income||{}).reduce(function(s,v){return s+(v[MCF_M1]||0);},0);
     ae=Object.values(MCF.expense||{}).reduce(function(s,v){return s+(v[MCF_M1]||0);},0);
-    mi=Object.values(MCF.income||{}).reduce(function(s,v){return s+(v[MCF_M2]||0);},0);
-    me=Object.values(MCF.expense||{}).reduce(function(s,v){return s+(v[MCF_M2]||0);},0);
+    mi=MCF_HAS_M2?Object.values(MCF.income||{}).reduce(function(s,v){return s+(v[MCF_M2]||0);},0):0;
+    me=MCF_HAS_M2?Object.values(MCF.expense||{}).reduce(function(s,v){return s+(v[MCF_M2]||0);},0):0;
   } else {
     // fallback: 시작일 기준 달력 월 그룹
     var calG=WD.length?initCalGroups():{};
@@ -307,17 +308,28 @@ function renderKpi(){
   ne.textContent=(tn<0?'':'+')+tn.toLocaleString()+' 백만';ne.style.color=tn>=0?'var(--bl)':'var(--rd)';
   document.getElementById('k_av').textContent=Math.round(ti/(WEEKS.length||1)).toLocaleString()+' 백만';
   document.getElementById('k_wk').textContent=WEEKS.length+'주 합산';
-  const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
+  var mn=Object.keys(MG);
+  var m1=M1N>0?M1N+'월':(mn[0]||'4월');
+  var m2=M2N>0?M2N+'월':(mn[1]||'5월');
   document.getElementById('k_m1i').textContent=m1+' 총입금';
   document.getElementById('k_m1e').textContent=m1+' 총출금';
-  document.getElementById('k_m2i').textContent=m2+' 총입금';
-  document.getElementById('k_m2e').textContent=m2+' 총출금';
   document.getElementById('k_m1iv').textContent=ai.toLocaleString()+' 백만';
   document.getElementById('k_m1ev').textContent=ae.toLocaleString()+' 백만';
-  document.getElementById('k_m2iv').textContent=mi.toLocaleString()+' 백만';
-  document.getElementById('k_m2ev').textContent=me.toLocaleString()+' 백만';
-  const m1n=ai-ae,m2n=mi-me;
-  document.getElementById('mnKpiNet').innerHTML=[{m:m1,n:m1n,ti:ai,te:ae},{m:m2,n:m2n,ti:mi,te:me}].map(function(x){
+  // M2 (5월) - 데이터 있을 때만 표시
+  var m2kc2=document.getElementById('k_m2i')&&document.getElementById('k_m2i').closest('.kc');
+  var m2kce=document.getElementById('k_m2e')&&document.getElementById('k_m2e').closest('.kc');
+  if(MCF_HAS_M2){
+    document.getElementById('k_m2i').textContent=m2+' 총입금';
+    document.getElementById('k_m2e').textContent=m2+' 총출금';
+    document.getElementById('k_m2iv').textContent=mi.toLocaleString()+' 백만';
+    document.getElementById('k_m2ev').textContent=me.toLocaleString()+' 백만';
+  } else {
+    if(m2kc2)m2kc2.style.display='none';
+    if(m2kce)m2kce.style.display='none';
+  }
+  var m1n=ai-ae,m2n=mi-me;
+  var netItems=MCF_HAS_M2?[{m:m1,n:m1n,ti:ai,te:ae},{m:m2,n:m2n,ti:mi,te:me}]:[{m:m1,n:m1n,ti:ai,te:ae}];
+  document.getElementById('mnKpiNet').innerHTML=netItems.map(function(x){
     var c=x.n>=0?'var(--gr)':'var(--rd)';var bt=x.n>=0?'#4ade80':'#f87171';
     return '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px 28px;border-top:3px solid '+bt+';position:relative;overflow:hidden">'
       +'<div style="font-size:12px;color:var(--sub);margin-bottom:10px">'+x.m+' 순현금흐름</div>'
@@ -339,10 +351,18 @@ function buildCharts(){
   mk('cED','doughnut',{labels:ek,datasets:[{data:ev,backgroundColor:[...CLR].reverse(),borderWidth:2,borderColor:'#1a1d27'}]},{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}}});
   const sk=Object.keys(INCOME).slice(0,5);
   mk('cSB','bar',{labels:WEEKS,datasets:sk.map((x,i)=>({label:x,data:INCOME[x],backgroundColor:CLR[i],borderWidth:0,borderRadius:2}))},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:8,font:{size:10}}}},scales:{x:{stacked:true,grid:{color:GC},ticks:{font:{size:10}}},y:{stacked:true,grid:{color:GC},ticks:{callback:v=>v.toLocaleString()}}}});
-  const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
-  mk('cMB','bar',{labels:[m1,m2],datasets:[{label:'입금',data:[ai,mi],backgroundColor:'rgba(74,222,128,.7)',borderColor:'#4ade80',borderWidth:1,borderRadius:6},{label:'출금',data:[ae,me],backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:6},{label:'순현금',data:[ai-ae,mi-me],backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
-  const k5=Object.keys(INCOME).slice(0,5);
-  mk('cMI','bar',{labels:k5,datasets:[{label:m1,data:k5.map(x=>idxSum(INCOME[x],CAPR)),backgroundColor:'rgba(74,222,128,.5)',borderColor:'#4ade80',borderWidth:1,borderRadius:4},{label:m2,data:k5.map(x=>idxSum(INCOME[x],CMAY)),backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
+  var mcfRef=D.monthly_cashflow;
+  var m1c=M1N>0?M1N+'월':(Object.keys(MG)[0]||'4월');
+  var m2c=M2N>0?M2N+'월':(Object.keys(MG)[1]||'5월');
+  var mbLabels=MCF_HAS_M2?[m1c,m2c]:[m1c];
+  var mbIn=MCF_HAS_M2?[ai,mi]:[ai],mbEx=MCF_HAS_M2?[ae,me]:[ae],mbNet=MCF_HAS_M2?[ai-ae,mi-me]:[ai-ae];
+  mk('cMB','bar',{labels:mbLabels,datasets:[{label:'입금',data:mbIn,backgroundColor:'rgba(74,222,128,.7)',borderColor:'#4ade80',borderWidth:1,borderRadius:6},{label:'출금',data:mbEx,backgroundColor:'rgba(248,113,113,.7)',borderColor:'#f87171',borderWidth:1,borderRadius:6},{label:'순현금',data:mbNet,backgroundColor:'rgba(96,165,250,.7)',borderColor:'#60a5fa',borderWidth:1,borderRadius:6}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
+  var incRef=mcfRef&&mcfRef.income||{};
+  var k5=Object.keys(incRef).length?Object.keys(incRef).slice(0,5):Object.keys(INCOME).slice(0,5);
+  var ds1={label:m1c,data:k5.map(function(x){return incRef[x]?(incRef[x][MCF_M1]||0):idxSum(INCOME[x]||[],CAPR);}),backgroundColor:'rgba(74,222,128,.5)',borderColor:'#4ade80',borderWidth:1,borderRadius:4};
+  var cMIDs=[ds1];
+  if(MCF_HAS_M2){cMIDs.push({label:m2c,data:k5.map(function(x){return incRef[x]?(incRef[x][MCF_M2]||0):idxSum(INCOME[x]||[],CMAY);}),backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4});}
+  mk('cMI','bar',{labels:k5,datasets:cMIDs},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:SC()});
 }
 
 function buildWeeklyTable(){
@@ -361,27 +381,35 @@ function buildWeeklyTable(){
 
 function buildMonthlyTable(){
   var MCF=D.monthly_cashflow;
-  var useMCF=MCF&&MCF.months&&MCF.months.length>=2;
-  var m1Label=M1N+'월',m2Label=M2N+'월';
+  var useMCF=MCF&&MCF.months&&MCF.months.length>=1;
+  var m1Label=M1N>0?M1N+'월':'4월',m2Label=M2N>0?M2N+'월':'5월';
   const t=document.getElementById('tMonthly');
-  let h=`<thead><tr><th>구분</th><th>항목</th><th>${m1Label}</th><th>${m2Label}</th><th>증감</th><th>증감율</th></tr></thead><tbody>`;
-  const row=(lb,a,m,sub)=>{const d=m-a,r=a?(d/a*100).toFixed(1):null,dc=d>=0?'pos':'neg';h+=`<tr><td></td><td style="text-align:left;padding-left:${sub?'40':'24'}px;color:var(--tx)">${lb}</td><td>${F(a)||'-'}</td><td>${F(m)||'-'}</td><td class="${dc}">${a||m?FN(d):'-'}</td><td class="${dc}">${r!==null?(d>=0?'+':'')+r+'%':'-'}</td></tr>`;};
+  var colH=MCF_HAS_M2?`<th>${m1Label}</th><th>${m2Label}</th><th>증감</th><th>증감율</th>`:`<th>${m1Label}</th>`;
+  let h=`<thead><tr><th>구분</th><th>항목</th>${colH}</tr></thead><tbody>`;
+  const row=(lb,a,m,sub)=>{
+    var base=`<tr><td></td><td style="text-align:left;padding-left:${sub?'40':'24'}px;color:var(--tx)">${lb}</td><td>${F(a)||'-'}</td>`;
+    if(MCF_HAS_M2){const d=m-a,r=a?(d/a*100).toFixed(1):null,dc=d>=0?'pos':'neg';base+=`<td>${F(m)||'-'}</td><td class="${dc}">${a||m?FN(d):'-'}</td><td class="${dc}">${r!==null?(d>=0?'+':'')+r+'%':'-'}</td>`;}
+    h+=base+'</tr>';
+  };
   // 입금 합계
-  h+=`<tr class="it"><td colspan="2" style="padding-left:24px">▶ 입금 합계</td><td>${F(ai)}</td><td>${F(mi)}</td><td class="${mi-ai>=0?'pos':'neg'}">${FN(mi-ai)}</td><td class="${mi-ai>=0?'pos':'neg'}">${ai?(((mi-ai)/ai*100).toFixed(1)>=0?'+':'')+((mi-ai)/ai*100).toFixed(1)+'%':'-'}</td></tr>`;
+  var itCols=MCF_HAS_M2?`<td>${F(ai)}</td><td>${F(mi)}</td><td class="${mi-ai>=0?'pos':'neg'}">${FN(mi-ai)}</td><td class="${mi-ai>=0?'pos':'neg'}">${ai?(((mi-ai)/ai*100).toFixed(1)>=0?'+':'')+((mi-ai)/ai*100).toFixed(1)+'%':'-'}</td>`:`<td>${F(ai)}</td>`;
+  h+=`<tr class="it"><td colspan="2" style="padding-left:24px">▶ 입금 합계</td>${itCols}</tr>`;
   if(useMCF){
-    Object.entries(MCF.income||{}).forEach(([k,v])=>row(k,v[MCF_M1]||0,v[MCF_M2]||0,true));
+    Object.entries(MCF.income||{}).forEach(([k,v])=>row(k,v[MCF_M1]||0,MCF_HAS_M2?v[MCF_M2]||0:0,true));
   } else {
-    Object.entries(INCOME).forEach(([k,v])=>row(k,idxSum(v,CAPR),idxSum(v,CMAY),true));
+    Object.entries(INCOME).forEach(([k,v])=>row(k,idxSum(v,CAPR),MCF_HAS_M2?idxSum(v,CMAY):0,true));
   }
   // 출금 합계
-  h+=`<tr class="et"><td colspan="2" style="padding-left:24px">▶ 출금 합계</td><td>${F(ae)}</td><td>${F(me)}</td><td class="${me-ae>=0?'pos':'neg'}">${FN(me-ae)}</td><td class="${me-ae>=0?'pos':'neg'}">${ae?(((me-ae)/ae*100).toFixed(1)>=0?'+':'')+((me-ae)/ae*100).toFixed(1)+'%':'-'}</td></tr>`;
+  var etCols=MCF_HAS_M2?`<td>${F(ae)}</td><td>${F(me)}</td><td class="${me-ae>=0?'pos':'neg'}">${FN(me-ae)}</td><td class="${me-ae>=0?'pos':'neg'}">${ae?(((me-ae)/ae*100).toFixed(1)>=0?'+':'')+((me-ae)/ae*100).toFixed(1)+'%':'-'}</td>`:`<td>${F(ae)}</td>`;
+  h+=`<tr class="et"><td colspan="2" style="padding-left:24px">▶ 출금 합계</td>${etCols}</tr>`;
   if(useMCF){
-    Object.entries(MCF.expense||{}).forEach(([k,v])=>row(k,v[MCF_M1]||0,v[MCF_M2]||0,true));
+    Object.entries(MCF.expense||{}).forEach(([k,v])=>row(k,v[MCF_M1]||0,MCF_HAS_M2?v[MCF_M2]||0:0,true));
   } else {
-    Object.entries(EXPENSE).forEach(([k,v])=>row(k,idxSum(v,CAPR),idxSum(v,CMAY),true));
+    Object.entries(EXPENSE).forEach(([k,v])=>row(k,idxSum(v,CAPR),MCF_HAS_M2?idxSum(v,CMAY):0,true));
   }
   const an=ai-ae,mn2=mi-me,dn=mn2-an,rn=an?(dn/Math.abs(an)*100).toFixed(1):null;
-  h+=`<tr class="nr"><td colspan="2" style="padding-left:24px">💡 순현금흐름</td><td class="${an>=0?'pos':'neg'}">${FN(an)}</td><td class="${mn2>=0?'pos':'neg'}">${FN(mn2)}</td><td class="${dn>=0?'pos':'neg'}">${FN(dn)}</td><td class="${dn>=0?'pos':'neg'}">${rn!==null?(dn>=0?'+':'')+rn+'%':'-'}</td></tr></tbody>`;
+  var nrCols=MCF_HAS_M2?`<td class="${an>=0?'pos':'neg'}">${FN(an)}</td><td class="${mn2>=0?'pos':'neg'}">${FN(mn2)}</td><td class="${dn>=0?'pos':'neg'}">${FN(dn)}</td><td class="${dn>=0?'pos':'neg'}">${rn!==null?(dn>=0?'+':'')+rn+'%':'-'}</td>`:`<td class="${an>=0?'pos':'neg'}">${FN(an)}</td>`;
+  h+=`<tr class="nr"><td colspan="2" style="padding-left:24px">💡 순현금흐름</td>${nrCols}</tr></tbody>`;
   t.innerHTML=h;
 }
 
