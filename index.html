@@ -221,7 +221,7 @@ const F=n=>(!n&&n!==0)?'-':Math.round(n).toLocaleString('ko-KR');
 const FN=n=>(!n&&n!==0)?'-':(n<0?'':'+')+Math.round(n).toLocaleString('ko-KR');
 
 // ── 달력 기반 월별 집계 (시작일 기준: 4/30 시작 → 4월) ──────
-var CAPR=[],CMAY=[],M1N=4,M2N=5;
+var CAPR=[],CMAY=[],M1N=4,M2N=5,MCF_M1=0,MCF_M2=1;
 function initCalGroups(){
   // week_dates 시작일 기준으로 월 분류
   // "4/30~5/6" → 시작일 4월 → 4월 그룹
@@ -269,13 +269,27 @@ function init(){
   tI=WEEKS.map((_,i)=>Object.values(INCOME).reduce((s,v)=>s+(v[i]||0),0));
   tE=WEEKS.map((_,i)=>Object.values(EXPENSE).reduce((s,v)=>s+(v[i]||0),0));
   net=WEEKS.map((_,i)=>tI[i]-tE[i]);
-  // 시작일 기준 달력 월 그룹 계산
-  var calG=WD.length?initCalGroups():{};
-  M1N=parseInt(mn[0])||4;M2N=parseInt(mn[1])||5;
-  CAPR=calG[M1N+'월']||APR;
-  CMAY=calG[M2N+'월']||MAY;
-  ai=idxSumAll(INCOME,CAPR);ae=idxSumAll(EXPENSE,CAPR);
-  mi=idxSumAll(INCOME,CMAY);me=idxSumAll(EXPENSE,CMAY);
+  // monthly_cashflow(백데이터) 우선, 없으면 주간 집계 fallback
+  var MCF=D.monthly_cashflow;
+  if(MCF&&MCF.months&&MCF.months.length>=2){
+    // 가장 최근 2개월 사용
+    var mLen=MCF.months.length;
+    MCF_M1=mLen-2; MCF_M2=mLen-1;
+    M1N=parseInt(MCF.months[MCF_M1].split('-')[1])||4;
+    M2N=parseInt(MCF.months[MCF_M2].split('-')[1])||5;
+    ai=Object.values(MCF.income||{}).reduce(function(s,v){return s+(v[MCF_M1]||0);},0);
+    ae=Object.values(MCF.expense||{}).reduce(function(s,v){return s+(v[MCF_M1]||0);},0);
+    mi=Object.values(MCF.income||{}).reduce(function(s,v){return s+(v[MCF_M2]||0);},0);
+    me=Object.values(MCF.expense||{}).reduce(function(s,v){return s+(v[MCF_M2]||0);},0);
+  } else {
+    // fallback: 시작일 기준 달력 월 그룹
+    var calG=WD.length?initCalGroups():{};
+    M1N=parseInt(mn[0])||4;M2N=parseInt(mn[1])||5;
+    CAPR=calG[M1N+'월']||APR;
+    CMAY=calG[M2N+'월']||MAY;
+    ai=idxSumAll(INCOME,CAPR);ae=idxSumAll(EXPENSE,CAPR);
+    mi=idxSumAll(INCOME,CMAY);me=idxSumAll(EXPENSE,CMAY);
+  }
   renderKpi();buildCharts();buildWeeklyTable();buildMonthlyTable();buildIssues();
   const now=new Date();
   document.getElementById('lastUpdated').textContent=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+' 기준';
@@ -342,14 +356,28 @@ function buildWeeklyTable(){
 }
 
 function buildMonthlyTable(){
-  const mn=Object.keys(MG),m1=mn[0]||'4월',m2=mn[1]||'5월';
+  var MCF=D.monthly_cashflow;
+  var useMCF=MCF&&MCF.months&&MCF.months.length>=2;
+  var m1Label=M1N+'월',m2Label=M2N+'월';
   const t=document.getElementById('tMonthly');
-  let h=`<thead><tr><th>구분</th><th>항목</th><th>${m1}</th><th>${m2}</th><th>증감</th><th>증감율</th></tr></thead><tbody>`;
+  let h=`<thead><tr><th>구분</th><th>항목</th><th>${m1Label}</th><th>${m2Label}</th><th>증감</th><th>증감율</th></tr></thead><tbody>`;
   const row=(lb,a,m,sub)=>{const d=m-a,r=a?(d/a*100).toFixed(1):null,dc=d>=0?'pos':'neg';h+=`<tr><td></td><td style="text-align:left;padding-left:${sub?'40':'24'}px;color:var(--tx)">${lb}</td><td>${F(a)||'-'}</td><td>${F(m)||'-'}</td><td class="${dc}">${a||m?FN(d):'-'}</td><td class="${dc}">${r!==null?(d>=0?'+':'')+r+'%':'-'}</td></tr>`;};
+  // 입금 합계
+  h+=`<tr class="it"><td colspan="2" style="padding-left:24px">▶ 입금 합계</td><td>${F(ai)}</td><td>${F(mi)}</td><td class="${mi-ai>=0?'pos':'neg'}">${FN(mi-ai)}</td><td class="${mi-ai>=0?'pos':'neg'}">${ai?(((mi-ai)/ai*100).toFixed(1)>=0?'+':'')+((mi-ai)/ai*100).toFixed(1)+'%':'-'}</td></tr>`;
+  if(useMCF){
+    Object.entries(MCF.income||{}).forEach(([k,v])=>row(k,v[MCF_M1]||0,v[MCF_M2]||0,true));
+  } else {
+    Object.entries(INCOME).forEach(([k,v])=>row(k,idxSum(v,CAPR),idxSum(v,CMAY),true));
+  }
+  // 출금 합계
+  h+=`<tr class="et"><td colspan="2" style="padding-left:24px">▶ 출금 합계</td><td>${F(ae)}</td><td>${F(me)}</td><td class="${me-ae>=0?'pos':'neg'}">${FN(me-ae)}</td><td class="${me-ae>=0?'pos':'neg'}">${ae?(((me-ae)/ae*100).toFixed(1)>=0?'+':'')+((me-ae)/ae*100).toFixed(1)+'%':'-'}</td></tr>`;
+  if(useMCF){
+    Object.entries(MCF.expense||{}).forEach(([k,v])=>row(k,v[MCF_M1]||0,v[MCF_M2]||0,true));
+  } else {
+    Object.entries(EXPENSE).forEach(([k,v])=>row(k,idxSum(v,CAPR),idxSum(v,CMAY),true));
+  }
   [[' 입금 합계','it',INCOME,ai,mi],[' 출금 합계','et',EXPENSE,ae,me]].forEach(([lb,cls,data,tA,tM])=>{
-    const d=tM-tA,r=tA?(d/tA*100).toFixed(1):null;
-    h+=`<tr class="${cls}"><td colspan="2" style="padding-left:24px">▶${lb}</td><td>${F(tA)}</td><td>${F(tM)}</td><td class="${d>=0?'pos':'neg'}">${FN(d)}</td><td class="${d>=0?'pos':'neg'}">${r!==null?(d>=0?'+':'')+r+'%':'-'}</td></tr>`;
-    Object.entries(data).forEach(([k,v])=>{const a=idxSum(v,CAPR),m=idxSum(v,CMAY);row(k,a,m,true);});
+    // dummy loop suppressed – handled above
   });
   const an=ai-ae,mn2=mi-me,dn=mn2-an,rn=an?(dn/Math.abs(an)*100).toFixed(1):null;
   h+=`<tr class="nr"><td colspan="2" style="padding-left:24px">💡 순현금흐름</td><td class="${an>=0?'pos':'neg'}">${FN(an)}</td><td class="${mn2>=0?'pos':'neg'}">${FN(mn2)}</td><td class="${dn>=0?'pos':'neg'}">${FN(dn)}</td><td class="${dn>=0?'pos':'neg'}">${rn!==null?(dn>=0?'+':'')+rn+'%':'-'}</td></tr></tbody>`;
