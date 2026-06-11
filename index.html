@@ -92,6 +92,22 @@ td.il{padding-left:40px}
 .mta:focus{background:rgba(99,102,241,.04)}
 .msv{font-size:11px;color:var(--gr);opacity:0;transition:opacity .4s}
 .msv.show{opacity:1}
+.iac{display:flex;gap:6px;margin-top:10px}
+.ib{background:none;border:1px solid var(--bd);color:var(--sub);font-size:11px;padding:3px 10px;border-radius:5px;cursor:pointer;transition:all .15s}
+.ib:hover{border-color:var(--ac);color:var(--tx)}
+.ib.del:hover{border-color:var(--rd);color:var(--rd)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.md{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:32px 36px;width:460px;max-width:95vw}
+.mdtt{font-size:16px;font-weight:700;margin-bottom:24px}
+.mdf{margin-bottom:16px}
+.mdl{font-size:12px;color:var(--sub);margin-bottom:6px;font-weight:500}
+.mdi{width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-size:13px;padding:9px 12px;border-radius:8px;outline:none;font-family:inherit}
+.mdi:focus{border-color:var(--ac)}
+.mds{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-size:13px;padding:9px 12px;border-radius:8px;outline:none;cursor:pointer}
+.mdbr{display:flex;gap:10px;margin-top:24px;justify-content:flex-end}
+.mdbtn{font-size:13px;font-weight:600;padding:9px 22px;border-radius:8px;border:none;cursor:pointer}
+.mdbtn.ok{background:var(--ac);color:#fff}
+.mdbtn.cc{background:var(--sf2);border:1px solid var(--bd);color:var(--sub)}
 @media(max-width:1200px){.kg{grid-template-columns:repeat(2,1fr)}.cg2{grid-template-columns:1fr}.cg3{grid-template-columns:1fr 1fr}}
 @media(max-width:768px){.main{padding:16px}.kg{grid-template-columns:1fr 1fr}.ig{grid-template-columns:1fr}}
 </style>
@@ -159,8 +175,30 @@ td.il{padding-left:40px}
     <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">월별 자금 비교표</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div><div class="ts"><table id="tMonthly"></table></div></div>
   </div>
   <div id="tab-issues" class="tp">
-    <div style="font-size:13px;font-weight:600;color:var(--sub);margin-bottom:16px">📌 주요 이슈</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:13px;font-weight:600;color:var(--sub)">📌 주요 이슈</span>
+      <button class="mdbtn ok" style="padding:7px 16px;font-size:12px" onclick="openIssueModal(-1)">+ 이슈 추가</button>
+    </div>
     <div class="ig" id="issueGrid"></div>
+    <div id="issueModal" class="ov" style="display:none" onclick="if(event.target===this)closeIssueModal()">
+      <div class="md">
+        <div class="mdtt" id="modalTitle">이슈 추가</div>
+        <div class="mdf"><div class="mdl">태그</div><input class="mdi" id="iTag" placeholder="예: 재무, 운영, 법무"></div>
+        <div class="mdf"><div class="mdl">제목</div><input class="mdi" id="iTitle" placeholder="이슈 제목을 입력하세요"></div>
+        <div class="mdf"><div class="mdl">중요도</div>
+          <select class="mdi mds" id="iLevel">
+            <option value="high">상 (긴급)</option>
+            <option value="mid">중 (주의)</option>
+            <option value="low">하 (모니터링)</option>
+          </select>
+        </div>
+        <div class="mdf"><div class="mdl">설명</div><textarea class="mdi" id="iDesc" rows="4" placeholder="상세 내용을 입력하세요" style="resize:vertical"></textarea></div>
+        <div class="mdbr">
+          <button class="mdbtn cc" onclick="closeIssueModal()">취소</button>
+          <button class="mdbtn ok" onclick="saveIssue()">저장</button>
+        </div>
+      </div>
+    </div>
     <div style="margin-top:32px;border-top:1px solid var(--bd);padding-top:28px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
         <span style="font-size:14px;font-weight:600">📝 주차별 메모</span>
@@ -451,9 +489,60 @@ function buildMonthlyTable(){
   t.innerHTML=h;
 }
 
+// ══ 주요 이슈 편집 ════════════════════════════════════════
+var IK='pb_issues_v2';
+var _editIdx=-1;
+function loadIssues(){try{var s=localStorage.getItem(IK);if(s)return JSON.parse(s);}catch(e){}return ISSUES.map(function(d){return Object.assign({},d);});}
+function saveIssues(arr){try{localStorage.setItem(IK,JSON.stringify(arr));}catch(e){}}
 function buildIssues(){
-  document.getElementById('issueGrid').innerHTML=ISSUES.map(d=>`<div class="ic"><div class="id ${d.level}"></div><div><span class="itag">${d.tag||''}</span><div class="ititle">${d.title||''}</div><div class="idesc">${(d.desc||'').replace(/\n/g,'<br>')}</div></div></div>`).join('');
+  var arr=loadIssues();
+  var lvlTxt={high:'상',mid:'중',low:'하'};
+  document.getElementById('issueGrid').innerHTML=arr.map(function(d,i){
+    return '<div class="ic"><div class="id '+(d.level||'high')+'"></div>'
+      +'<div style="flex:1"><span class="itag">'+(d.tag||'')+'</span>'
+      +'<span style="font-size:10px;color:var(--sub);margin-left:6px">중요도: '+(lvlTxt[d.level]||'상')+'</span>'
+      +'<div class="ititle">'+(d.title||'')+'</div>'
+      +'<div class="idesc">'+(d.desc||'').split('\n').join('<br>')+'</div>'
+      +'<div class="iac">'
+      +'<button class="ib" onclick="openIssueModal('+i+')">수정</button>'
+      +'<button class="ib del" onclick="deleteIssue('+i+')">삭제</button>'
+      +'</div></div></div>';
+  }).join('')+(arr.length===0?'<div style="color:var(--sub);font-size:13px;padding:20px">등록된 이슈가 없습니다.</div>':'');
   initMemo();
+}
+function openIssueModal(idx){
+  _editIdx=idx;
+  document.getElementById('modalTitle').textContent=idx<0?'이슈 추가':'이슈 수정';
+  if(idx>=0){
+    var arr=loadIssues(),d=arr[idx]||{};
+    document.getElementById('iTag').value=d.tag||'';
+    document.getElementById('iTitle').value=d.title||'';
+    document.getElementById('iLevel').value=d.level||'high';
+    document.getElementById('iDesc').value=d.desc||'';
+  } else {
+    document.getElementById('iTag').value='';
+    document.getElementById('iTitle').value='';
+    document.getElementById('iLevel').value='high';
+    document.getElementById('iDesc').value='';
+  }
+  document.getElementById('issueModal').style.display='flex';
+  document.getElementById('iTag').focus();
+}
+function closeIssueModal(){document.getElementById('issueModal').style.display='none';}
+function saveIssue(){
+  var tag=document.getElementById('iTag').value.trim();
+  var title=document.getElementById('iTitle').value.trim();
+  if(!title){document.getElementById('iTitle').focus();return;}
+  var d={tag:tag,title:title,level:document.getElementById('iLevel').value,desc:document.getElementById('iDesc').value.trim()};
+  var arr=loadIssues();
+  if(_editIdx<0) arr.push(d); else arr[_editIdx]=d;
+  saveIssues(arr);
+  closeIssueModal();
+  buildIssues();
+}
+function deleteIssue(idx){
+  if(!confirm('이 이슈를 삭제할까요?')) return;
+  var arr=loadIssues();arr.splice(idx,1);saveIssues(arr);buildIssues();
 }
 
 // ══ 주차별 메모 ════════════════════════════════════════════
