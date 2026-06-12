@@ -762,13 +762,17 @@ function renderQtrPair(){
 
   // 차트 렌더
   mk('cQP1','bar',{labels:selLbls,datasets:[
-    {label:'매출액',data:rev,backgroundColor:['rgba(96,165,250,.7)','rgba(245,158,11,.7)'],borderColor:QCLR2,borderWidth:2,borderRadius:6},
-    {label:'영업이익',data:op,type:'line',borderColor:op.map(function(v,i){return v>=0?QCLR2[i]:'#f87171';}),backgroundColor:'transparent',borderWidth:2,pointRadius:6,pointBackgroundColor:op.map(function(v,i){return v>=0?QCLR2[i]:'#f87171';}),tension:.2}
-  ]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14}}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:function(v){return v.toLocaleString()+'백만';},font:{size:10}}}}});
+    {label:'매출액',data:rev,backgroundColor:['rgba(96,165,250,.7)','rgba(245,158,11,.7)'],borderColor:QCLR2,borderWidth:2,borderRadius:6,
+     datalabels:{anchor:'end',align:'end',color:function(ctx){return QCLR2[ctx.dataIndex];},font:{size:12,weight:'700'},formatter:function(v){return v.toLocaleString()+'백만';},offset:4}},
+    {label:'영업이익',data:op,type:'line',borderColor:op.map(function(v,i){return v>=0?QCLR2[i]:'#f87171';}),backgroundColor:'transparent',borderWidth:2,pointRadius:6,pointBackgroundColor:op.map(function(v,i){return v>=0?QCLR2[i]:'#f87171';}),tension:.2,
+     datalabels:{anchor:'start',align:'bottom',color:function(ctx){return op[ctx.dataIndex]>=0?QCLR2[ctx.dataIndex]:'#f87171';},font:{size:11,weight:'700'},formatter:function(v){return v.toLocaleString()+'백만';},offset:6}}
+  ]},{responsive:true,maintainAspectRatio:false,layout:{padding:{top:30,bottom:10}},plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14}}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:function(v){return v.toLocaleString()+'백만';},font:{size:10}}}}}, [ChartDataLabels]);
   mk('cQP2','bar',{labels:selLbls,datasets:[
-    {label:'영업이익률',data:opR,backgroundColor:opR.map(function(v,i){return v>=0?QCLR2[i]+'cc':'rgba(248,113,113,.7)';}),borderRadius:6},
-    {label:'매출총이익률',data:gpR,backgroundColor:['rgba(96,165,250,.3)','rgba(245,158,11,.3)'],borderRadius:6}
-  ]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,padding:12,font:{size:11}}}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:function(v){return v+'%';},font:{size:10}}}}});
+    {label:'영업이익률',data:opR,backgroundColor:opR.map(function(v,i){return v>=0?QCLR2[i]+'cc':'rgba(248,113,113,.7)';}),borderRadius:6,
+     datalabels:{anchor:'end',align:'end',color:function(ctx){return opR[ctx.dataIndex]>=0?QCLR2[ctx.dataIndex]:'#f87171';},font:{size:12,weight:'700'},formatter:function(v){return v+'%';},offset:4}},
+    {label:'매출총이익률',data:gpR,backgroundColor:['rgba(96,165,250,.3)','rgba(245,158,11,.3)'],borderRadius:6,
+     datalabels:{anchor:'end',align:'end',color:function(ctx){return QCLR2[ctx.dataIndex];},font:{size:11,weight:'600'},formatter:function(v){return v+'%';},offset:4}}
+  ]},{responsive:true,maintainAspectRatio:false,layout:{padding:{top:30}},plugins:{legend:{position:'top',labels:{boxWidth:10,padding:12,font:{size:11}}}},scales:{x:{grid:{color:GC}},y:{grid:{color:GC},ticks:{callback:function(v){return v+'%';},font:{size:10}}}}}, [ChartDataLabels]);
 }
 
 // ══ 월간손익 - 전체 요약 ════════════════════════════════════════════
