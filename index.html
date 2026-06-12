@@ -211,6 +211,7 @@ td.il{padding-left:40px}
   <div id="tab-pl" class="tp">
     <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--bd)">
       <button class="plsb on" id="psb-all" onclick="plSub('all')">📈 전체 요약</button>
+      <button class="plsb" id="psb-qtr" onclick="plSub('qtr')">📅 분기별 비교</button>
       <button class="plsb" id="psb-mon" onclick="plSub('mon')">📊 월별 상세</button>
     </div>
     <div id="pl-all">
@@ -221,6 +222,14 @@ td.il{padding-left:40px}
         <div class="cc"><div class="ct">영업이익률 <span class="cs">%</span></div><div style="position:relative;height:240px"><canvas id="cOP"></canvas></div></div>
       </div>
       <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">전체 월별 손익 상세</span><span style="font-size:12px;color:var(--sub)">단위: 백만원</span></div><div style="overflow-x:auto"><table id="tPL" style="width:100%;border-collapse:collapse;font-size:12px"></table></div></div>
+    </div>
+    <div id="pl-qtr" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px" id="plQtrKpi"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px">
+        <div class="cc"><div class="ct">분기별 매출액 / 영업이익 추이 <span class="cs">단위: 백만원</span></div><div style="position:relative;height:300px"><canvas id="cQTR"></canvas></div></div>
+        <div class="cc"><div class="ct">분기별 영업이익률 <span class="cs">%</span></div><div style="position:relative;height:300px"><canvas id="cQOP"></canvas></div></div>
+      </div>
+      <div class="tc"><div class="th"><span style="font-size:14px;font-weight:600">분기별 손익 비교표</span><span style="font-size:12px;color:var(--sub)">단위: 백만원 | 전년 동분기 대비</span></div><div style="overflow-x:auto" id="plQtrTbl"></div></div>
     </div>
     <div id="pl-mon" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px 20px;background:var(--sf);border:1px solid var(--bd);border-radius:10px">
@@ -291,13 +300,12 @@ function showTab(name,btn){
 }
 
 function plSub(name){
-  document.getElementById('pl-all').style.display=name==='all'?'':'none';
-  document.getElementById('pl-mon').style.display=name==='mon'?'':'none';
-  ['all','mon'].forEach(n=>{
-    const b=document.getElementById('psb-'+n);
-    b.classList.toggle('on',n===name);
+  ['all','qtr','mon'].forEach(n=>{
+    document.getElementById('pl-'+n).style.display=n===name?'':'none';
+    document.getElementById('psb-'+n).classList.toggle('on',n===name);
   });
   if(name==='mon')buildPlMonth();
+  if(name==='qtr')buildPlQtr();
 }
 
 function init(){
@@ -586,6 +594,116 @@ function saveMemo(month,week){
   try{localStorage.setItem(key,el.value);}catch(e){}
   var sv=document.getElementById('sv_'+month+'_'+week);
   if(sv){sv.classList.add('show');setTimeout(function(){sv.classList.remove('show');},2000);}
+}
+
+// ══ 월간손익 - 분기별 비교 ════════════════════════════════════════════
+var _qtrBuilt=false;
+function buildPlQtr(){
+  if(_qtrBuilt)return;_qtrBuilt=true;
+  if(!PL||!PL.items||!PL.months){
+    document.getElementById('plQtrKpi').innerHTML='<p style="padding:20px;color:var(--sub)">손익 데이터가 없습니다.</p>';
+    return;
+  }
+  var items=PL.items,months=PL.months;
+  // 분기 구조 생성
+  var qMap={},qOrder=[];
+  months.forEach(function(m,mi){
+    var y=m.slice(0,4),mo=parseInt(m.slice(5,7));
+    var q=Math.ceil(mo/3);
+    var key=y+'Q'+q;
+    var lbl="'"+y.slice(2)+'.Q'+q;
+    if(!qMap[key]){qMap[key]={key:key,lbl:lbl,year:y,q:q,idxs:[]};qOrder.push(key);}
+    qMap[key].idxs.push(mi);
+  });
+  // 분기별 항목 합계
+  function qSum(vals,idxs){return idxs.reduce(function(s,i){return s+(vals[i]||0);},0);}
+  var qItems={};
+  Object.keys(items).forEach(function(k){
+    qItems[k]=qOrder.map(function(qk){return qSum(items[k],qMap[qk].idxs);});
+  });
+  var qLabels=qOrder.map(function(qk){return qMap[qk].lbl;});
+  var rev=qItems['매출액']||qOrder.map(function(){return 0;});
+  var op=qItems['영업이익']||qOrder.map(function(){return 0;});
+  var gp=qItems['매출총이익']||qOrder.map(function(){return 0;});
+  var opR=rev.map(function(v,i){return v?+(op[i]/v*100).toFixed(1):0;});
+  var gpR=rev.map(function(v,i){return v?+(gp[i]/v*100).toFixed(1):0;});
+  var nq=qOrder.length,last=nq-1;
+
+  // KPI 카드 (최근 4분기)
+  var show=Math.min(4,nq);
+  var kpiH='';
+  for(var qi=nq-show;qi<nq;qi++){
+    var qk=qOrder[qi],qd=qMap[qk];
+    var r=rev[qi],o=op[qi],or2=opR[qi];
+    var pyi=qi-4,hasPY=pyi>=0;
+    var pyr=hasPY?rev[pyi]:null,pyo=hasPY?op[pyi]:null,pyor=hasPY?opR[pyi]:null;
+    var oc=o>=0?'var(--gr)':'var(--rd)';
+    var bt=qi===last?'var(--ac)':'var(--bd)';
+    var diff='';
+    if(hasPY){
+      var dd=o-pyo,dc=dd>=0?'#4ade80':'#f87171';
+      var dr=pyo?+(dd/Math.abs(pyo)*100).toFixed(1):null;
+      diff='<div style="font-size:11px;color:'+dc+';margin-top:3px">'+(dd>=0?'▲':'▼')+' '+Math.abs(Math.round(dd)).toLocaleString()+(dr?' ('+dr+'%)':'')+'  전년동분기</div>';
+    }
+    kpiH+='<div style="background:var(--sf);border:1px solid '+bt+';border-radius:12px;padding:18px 20px;border-top:3px solid '+bt+'">'
+      +'<div style="font-size:11px;color:var(--sub);margin-bottom:6px">'+qd.lbl+' ('+qd.year+'년 '+qd.q+'분기)</div>'
+      +'<div style="font-size:11px;color:var(--sub);margin-bottom:2px">매출 <b style="color:var(--bl)">'+r.toLocaleString()+'백만</b></div>'
+      +'<div style="font-size:18px;font-weight:700;color:'+oc+'">'+o.toLocaleString()+'백만</div>'
+      +'<div style="font-size:11px;color:'+oc+'">영업이익률 '+or2+'%</div>'
+      +diff+'</div>';
+  }
+  document.getElementById('plQtrKpi').innerHTML=kpiH;
+
+  // 차트
+  mk('cQTR','bar',{labels:qLabels,datasets:[
+    {label:'매출액',data:rev,backgroundColor:'rgba(96,165,250,.6)',borderColor:'#60a5fa',borderWidth:1,borderRadius:4,order:2},
+    {label:'영업이익',data:op,type:'line',borderColor:op.map(function(v){return v>=0?'#4ade80':'#f87171';}),backgroundColor:'transparent',borderWidth:2,pointRadius:4,pointBackgroundColor:op.map(function(v){return v>=0?'#4ade80':'#f87171';}),tension:.3,order:1}
+  ]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:16}}},scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:function(v){return v.toLocaleString()+'백만';},font:{size:10}}}}});
+  mk('cQOP','bar',{labels:qLabels,datasets:[
+    {label:'영업이익률',data:opR,backgroundColor:opR.map(function(v){return v>=0?'rgba(74,222,128,.7)':'rgba(248,113,113,.7)';}),borderRadius:4},
+    {label:'매출총이익률',data:gpR,backgroundColor:'rgba(96,165,250,.4)',borderRadius:4}
+  ]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:12,padding:12,font:{size:11}}}},scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{callback:function(v){return v+'%';},font:{size:10}}}}});
+
+  // 분기 비교 테이블
+  var thS='padding:9px 12px;text-align:right;background:var(--sf2);color:var(--sub);font-size:11px;font-weight:600;border-bottom:1px solid var(--bd);white-space:nowrap;';
+  var tdS='padding:8px 12px;text-align:right;border-bottom:1px solid rgba(46,51,80,.4);font-size:12px;white-space:nowrap;';
+  var tdL='padding:8px 12px;text-align:left;border-bottom:1px solid rgba(46,51,80,.4);font-size:12px;font-weight:500;color:var(--tx);white-space:nowrap;';
+  var h='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="'+thS+'text-align:left;min-width:140px">과 목</th>';
+  qOrder.forEach(function(qk,qi){
+    var hasPY=qi-4>=0;
+    h+='<th style="'+thS+'">'+(qMap[qk].lbl)+'</th>';
+    if(hasPY)h+='<th style="'+thS+'color:#a78bfa">전년비</th>';
+  });
+  h+='</tr></thead><tbody>';
+  var BOLDS=['매출액','매출총이익','영업이익'];
+  Object.keys(qItems).forEach(function(k){
+    var vals=qItems[k];
+    var isBold=BOLDS.indexOf(k)>=0,isOp=k==='영업이익';
+    var bg=isOp?'rgba(74,222,128,.04)':isBold?'rgba(99,102,241,.05)':'';
+    h+='<tr style="background:'+bg+'"><td style="'+tdL+(isBold?';font-weight:700':'')+'">'+k+'</td>';
+    vals.forEach(function(v,qi){
+      var vc=isOp?(v>=0?'#4ade80':'#f87171'):(v<0?'var(--rd)':'var(--sub)');
+      var vt=v<0?'('+Math.abs(v).toLocaleString()+')':v.toLocaleString();
+      h+='<td style="'+tdS+'color:'+vc+(isBold?';font-weight:700':'')+'">'+vt+'</td>';
+      var pyi=qi-4;
+      if(pyi>=0){
+        var pv2=vals[pyi],d=v-pv2,dr=pv2?+(d/Math.abs(pv2)*100).toFixed(1):null;
+        var dc=d>0?'#4ade80':d<0?'#f87171':'var(--sub)';
+        h+='<td style="'+tdS+'color:'+dc+'">'+(d===0?'─':(d>0?'▲':'▼')+' '+Math.abs(Math.round(d)).toLocaleString()+(dr?' ('+dr+'%)':''))+'</td>';
+      }
+    });
+    h+='</tr>';
+  });
+  // 영업이익률 행
+  h+='<tr style="background:rgba(99,102,241,.03)"><td style="'+tdL+'color:var(--sub)"> 영업이익률</td>';
+  opR.forEach(function(v,qi){
+    var vc=v>=0?'var(--gr)':'var(--rd)';
+    h+='<td style="'+tdS+'color:'+vc+';font-weight:600">'+v+'%</td>';
+    var pyi=qi-4;
+    if(pyi>=0){var pv2=opR[pyi],d=+(v-pv2).toFixed(1);var dc=d>0?'#4ade80':d<0?'#f87171':'var(--sub)';h+='<td style="'+tdS+'color:'+dc+'">'+(d===0?'─':(d>0?'▲':'▼')+' '+Math.abs(d)+'%p')+'</td>';}
+  });
+  h+='</tr></tbody></table>';
+  document.getElementById('plQtrTbl').innerHTML=h;
 }
 
 // ══ 월간손익 - 전체 요약 ════════════════════════════════════════════
