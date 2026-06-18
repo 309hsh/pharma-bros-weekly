@@ -1,0 +1,28 @@
+name: Auto Update Dashboard
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # 매시간 자동 실행 (UTC 기준, 한국시간 +9h)
+  workflow_dispatch:        # GitHub 웹에서 수동 실행 가능
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run dashboard update
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          DATA_JSON_PATH: ./data.json
+        run: python final_fresh.py
