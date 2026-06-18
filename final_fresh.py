@@ -1522,7 +1522,8 @@ scripts = re.findall(r'<script(?! src)[^>]*>([\s\S]*?)</script>', html)
 main_js = scripts[-1]
 print(f'스크립트 블록: {len(scripts)}개')
 stub = 'const Chart={defaults:{color:"",font:{family:""}}};const document={getElementById:()=>({style:{},textContent:"",innerHTML:"",classList:{add:()=>{},remove:()=>{}},value:"0",options:[],length:0}),querySelectorAll:()=>[{classList:{add:()=>{},remove:()=>{}}}],addEventListener:()=>{},createElement:()=>({className:"",innerHTML:"",onclick:null,appendChild:()=>{}})};const window={};const sessionStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};const localStorage={getItem:()=>null,setItem:()=>{}};const location={href:"https://t.com",reload:()=>{}};'
-tmp = r'C:\Users\309se\AppData\Local\Temp\ff.mjs'
+import tempfile as _tf_mod
+tmp = os.path.join(_tf_mod.gettempdir(), 'ff.mjs')
 with open(tmp, 'w', encoding='utf-8') as f:
     f.write(stub + main_js)
 r = subprocess.run(['node', '--check', tmp], capture_output=True, text=True, encoding='utf-8', errors='replace')
