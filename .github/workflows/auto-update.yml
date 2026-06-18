@@ -23,6 +23,6 @@ jobs:
 
       - name: Run dashboard update
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DATA_JSON_PATH: ./data.json
         run: python final_fresh.py
