@@ -1,8 +1,6 @@
 name: Auto Update Dashboard
 
 on:
-  schedule:
-    - cron: '0 * * * *'   # 매시간 자동 실행 (UTC 기준, 한국시간 +9h)
   workflow_dispatch:        # GitHub 웹에서 수동 실행 가능
 
 permissions:
