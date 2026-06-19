@@ -548,37 +548,7 @@ html_parts.append("""<!DOCTYPE html>
   try{var t=sessionStorage.getItem(SK);if(t&&Date.now()<parseInt(t))document.addEventListener('DOMContentLoaded',hide);}catch(e){}
   window.checkPw=checkPw;window.logout=logout;
 })();
-function triggerUpdate(){
-  var btn=document.getElementById('updBtn');
-  var tok=localStorage.getItem('gh_update_tok');
-  if(!tok){
-    tok=prompt('GitHub 토큰을 입력하세요\\n(입력 후 브라우저에 저장됩니다)\\n\\n토큰 발급: github.com → Settings → Developer settings → Personal access tokens');
-    if(!tok)return;
-    localStorage.setItem('gh_update_tok',tok);
-  }
-  btn.disabled=true;btn.textContent='요청 중...';
-  fetch('https://api.github.com/repos/309hsh/pharma-bros-weekly/actions/workflows/auto-update.yml/dispatches',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
-    body:JSON.stringify({ref:'main'})
-  }).then(function(r){
-    if(r.ok||r.status===204){
-      btn.textContent='✅ 요청완료';
-      setTimeout(function(){btn.disabled=false;btn.textContent='🔄 업데이트';},3000);
-      alert('업데이트 요청 완료!\n약 1~2분 후 페이지를 새로고침 하세요.');
-    }else if(r.status===401||r.status===403){
-      localStorage.removeItem('gh_update_tok');
-      btn.disabled=false;btn.textContent='🔄 업데이트';
-      alert('토큰이 유효하지 않습니다. 다시 시도해 주세요.');
-    }else if(r.status===404){
-      btn.disabled=false;btn.textContent='🔄 업데이트';
-      alert('워크플로우가 아직 설정되지 않았습니다.\n관리자에게 문의하세요.');
-    }else{
-      btn.disabled=false;btn.textContent='🔄 업데이트';
-      alert('오류: '+r.status);
-    }
-  }).catch(function(e){btn.disabled=false;btn.textContent='🔄 업데이트';alert('네트워크 오류: '+e);});
-}
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -693,7 +663,6 @@ td.il{padding-left:40px}
     <span class="pb" id="periodBadge">—</span>
     <span class="up"><span class="dl"></span><span id="weekLabel">로딩중</span></span>
     <span class="up" id="lastUpdated"></span>
-    <button class="bsm" id="updBtn" onclick="triggerUpdate()">🔄 업데이트</button>
     <button class="bsm" onclick="logout()">🔓 로그아웃</button>
   </div>
 </header>
